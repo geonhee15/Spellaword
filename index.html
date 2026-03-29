@@ -997,11 +997,11 @@
 
     <!-- Audio controls -->
     <div class="audio-row">
-      <button class="speak-btn" id="speak-btn" onclick="speakWord(false)" onmousedown="event.preventDefault()">
+      <button class="speak-btn" id="speak-btn" tabindex="-1" onclick="speakWord(false)" onmousedown="event.preventDefault()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         Hear Word
       </button>
-      <button class="hint-btn" id="hint-btn" onclick="useHint()">
+      <button class="hint-btn" id="hint-btn" tabindex="-1" onclick="useHint()" onmousedown="event.preventDefault()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         Hint
       </button>
@@ -1174,7 +1174,7 @@
     <div class="opp-status" id="mg-opp-status"></div>
 
     <div class="audio-row">
-      <button class="speak-btn" id="mg-speak-btn" onclick="speakMultiWord(false)" onmousedown="event.preventDefault()">
+      <button class="speak-btn" id="mg-speak-btn" tabindex="-1" onclick="speakMultiWord(false)" onmousedown="event.preventDefault()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         Hear Word
       </button>
@@ -3035,6 +3035,26 @@ backToMenu = function() {
   _cleanupRoom();
   showScreen('difficulty-screen');
 };
+
+// ── Global key redirect: any printable key during game → focus input ──
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key.length !== 1) return; // skip Enter, Backspace, Arrow, etc.
+
+  const activeScreen = document.querySelector('.screen.active');
+  if (!activeScreen) return;
+
+  const inputId = activeScreen.id === 'game-screen'  ? 'spell-input' :
+                  activeScreen.id === 'multi-screen' ? 'mg-input'    : null;
+  if (!inputId) return;
+
+  const inp = document.getElementById(inputId);
+  if (!inp || inp.disabled) return;
+  if (document.activeElement !== inp) {
+    inp.focus();
+    // Don't preventDefault — let the keydown naturally type into the now-focused input
+  }
+});
 
 // Init
 buildDifficultyGrid();
