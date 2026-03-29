@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spellaword</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -663,6 +666,236 @@
     }
     .voice-opt .vq-badge.hd { background: #eef2ff; color: #667eea; }
 
+    /* ─── ONLINE COUNTER ─── */
+    .online-counter {
+      position: absolute;
+      top: 22px; left: 24px;
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 600; color: #666;
+    }
+    .online-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #34a853; flex-shrink: 0;
+      animation: dot-pulse 2s infinite;
+    }
+    @keyframes dot-pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.6; transform:scale(1.3); }
+    }
+
+    /* ─── MODE BUTTONS ─── */
+    .mode-btns { display: flex; gap: 16px; margin-bottom: 44px; flex-wrap: wrap; justify-content: center; }
+    .mode-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: #fff; border: 2px solid #ebebeb; border-radius: 20px;
+      padding: 24px 48px; cursor: pointer; transition: all .22s; font-family: var(--font);
+    }
+    .mode-btn:hover { border-color: #667eea; transform: translateY(-4px); box-shadow: 0 10px 28px rgba(102,126,234,.14); }
+    .mode-btn.active { border-color: #667eea; background: #eef2ff; }
+    .mode-btn-icon { font-size: 34px; }
+    .mode-btn-label { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+    .mode-btn-sub { font-size: 12px; color: #aaa; font-weight: 400; }
+
+    /* ─── LOBBY SCREEN ─── */
+    #lobby-screen {
+      min-height: 100vh; flex-direction: column; align-items: center;
+      padding: 48px 24px 80px; background: #fff; overflow-y: auto;
+    }
+    .lobby-header {
+      display: flex; align-items: center; gap: 14px;
+      max-width: 720px; width: 100%; margin-bottom: 36px;
+    }
+    .back-icon-btn {
+      background: #f5f5f7; border: none; border-radius: 12px;
+      width: 40px; height: 40px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; transition: background .18s;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .back-icon-btn:hover { background: #ebebeb; }
+    .lobby-title { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+    .lobby-online { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #888; }
+
+    .lobby-options {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      max-width: 720px; width: 100%; margin-bottom: 24px;
+    }
+    .lobby-card {
+      background: #fff; border: 2px solid #ebebeb; border-radius: 20px;
+      padding: 28px 20px; cursor: pointer; transition: all .22s; text-align: center;
+    }
+    .lobby-card:hover { border-color: #667eea; transform: translateY(-3px); box-shadow: 0 8px 28px rgba(102,126,234,.13); }
+    .lobby-card.active { border-color: #667eea; background: #eef2ff; }
+    .lobby-card-icon { font-size: 38px; margin-bottom: 12px; }
+    .lobby-card-title { font-size: 17px; font-weight: 700; margin-bottom: 5px; }
+    .lobby-card-desc { font-size: 12px; color: #aaa; }
+
+    .lobby-panel {
+      display: none; max-width: 720px; width: 100%;
+      background: #f9f9fb; border: 1px solid #efefef; border-radius: 20px;
+      padding: 28px; margin-bottom: 32px;
+    }
+    .lobby-panel.open { display: block; }
+    .lobby-panel-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+    .lobby-input {
+      width: 100%; border: 2px solid #e5e5e5; border-radius: 12px;
+      padding: 13px 16px; font-size: 15px; font-family: var(--font);
+      outline: none; transition: border-color .2s; background: #fff; margin-bottom: 11px;
+    }
+    .lobby-input:focus { border-color: #667eea; }
+    .lobby-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+    .toggle-label { font-size: 13px; font-weight: 600; color: #666; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .toggle-sw {
+      width: 42px; height: 24px; background: #e0e0e0; border-radius: 12px;
+      position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+    }
+    .toggle-sw.on { background: #667eea; }
+    .toggle-knob {
+      position: absolute; top: 4px; left: 4px;
+      width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left .2s;
+    }
+    .toggle-sw.on .toggle-knob { left: 22px; }
+    .lobby-btn {
+      width: 100%; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+      border: none; border-radius: 13px; padding: 14px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: all .2s; font-family: var(--font); margin-top: 6px;
+    }
+    .lobby-btn:hover { transform: scale(1.02); box-shadow: 0 5px 18px rgba(102,126,234,.35); }
+
+    .level-select-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+    .lv-chip {
+      padding: 6px 14px; border: 1.5px solid #e5e5e5; border-radius: 30px;
+      font-size: 12px; font-weight: 600; color: #666; cursor: pointer; transition: all .15s;
+    }
+    .lv-chip:hover { border-color: #667eea; color: #667eea; }
+    .lv-chip.sel { background: #667eea; border-color: #667eea; color: #fff; }
+
+    /* ─── PUBLIC ROOMS ─── */
+    .public-rooms-section { max-width: 720px; width: 100%; }
+    .section-hd {
+      font-size: 11px; font-weight: 700; color: #bbb;
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .room-list { display: flex; flex-direction: column; gap: 10px; }
+    .room-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fff; border: 1.5px solid #ebebeb; border-radius: 14px;
+      padding: 16px 20px; transition: all .18s;
+    }
+    .room-item:hover { border-color: #d5d5d5; box-shadow: var(--shadow-sm); }
+    .room-item-name { font-size: 15px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .room-item-meta { display: flex; gap: 8px; align-items: center; }
+    .room-host-txt { font-size: 12px; color: #aaa; }
+    .room-lv-chip {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 6px; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .room-right { display: flex; align-items: center; gap: 12px; }
+    .room-players-txt { font-size: 13px; color: #888; font-weight: 600; }
+    .join-btn {
+      background: #1a1a1a; color: #fff; border: none; border-radius: 10px;
+      padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all .18s; font-family: var(--font);
+    }
+    .join-btn:hover { background: #333; transform: scale(1.02); }
+    .no-rooms { text-align: center; color: #ccc; font-size: 14px; padding: 32px 0; }
+
+    /* ─── WAITING ROOM ─── */
+    #waiting-screen {
+      min-height: 100vh; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 24px; background: #fff;
+    }
+    .wait-code-card {
+      background: #f9f9fb; border: 1px solid #efefef; border-radius: 20px;
+      padding: 32px 44px; text-align: center; margin-bottom: 28px;
+      max-width: 460px; width: 100%;
+    }
+    .wait-room-name { font-size: 22px; font-weight: 800; color: #1a1a1a; margin-bottom: 18px; }
+    .wait-code-big { font-size: 50px; font-weight: 800; color: #667eea; letter-spacing: 10px; font-family: monospace; margin-bottom: 7px; }
+    .wait-code-hint { font-size: 12px; color: #bbb; margin-bottom: 14px; }
+    .copy-btn {
+      background: none; border: 1.5px solid #667eea; border-radius: 10px;
+      padding: 6px 16px; font-size: 12px; font-weight: 600; color: #667eea;
+      cursor: pointer; transition: all .18s; font-family: var(--font);
+    }
+    .copy-btn:hover { background: #667eea; color: #fff; }
+
+    .wait-players { max-width: 460px; width: 100%; margin-bottom: 28px; }
+    .wait-players-title { font-size: 11px; font-weight: 700; color: #bbb; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+    .player-slot {
+      display: flex; align-items: center; gap: 14px;
+      background: #fff; border: 1.5px solid #ebebeb;
+      border-radius: 13px; padding: 14px 18px; margin-bottom: 8px;
+    }
+    .player-slot.me { border-color: #667eea; background: #eef2ff; }
+    .p-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .p-name { font-size: 15px; font-weight: 600; color: #1a1a1a; flex: 1; }
+    .p-tag {
+      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px;
+      background: #eef2ff; color: #667eea;
+    }
+    .p-tag.host { background: #fff3e0; color: #b46000; }
+    .wait-empty {
+      display: flex; align-items: center; gap: 14px;
+      border: 2px dashed #e5e5e5; border-radius: 13px;
+      padding: 14px 18px; margin-bottom: 8px; color: #ccc; font-size: 14px;
+    }
+    .wait-empty .p-avatar { background: #f0f0f0; }
+    .dot-loader span {
+      display: inline-block; width: 6px; height: 6px; background: #ccc;
+      border-radius: 50%; margin-right: 3px; animation: db .9s infinite;
+    }
+    .dot-loader span:nth-child(2) { animation-delay: .15s; }
+    .dot-loader span:nth-child(3) { animation-delay: .3s; }
+    @keyframes db { 0%,80%,100% { transform:scale(.6); } 40% { transform:scale(1); } }
+
+    .start-btn {
+      background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+      border: none; border-radius: 14px; padding: 16px 48px;
+      font-size: 16px; font-weight: 700; cursor: pointer; transition: all .2s; font-family: var(--font);
+    }
+    .start-btn:hover:not(:disabled) { transform: scale(1.03); box-shadow: 0 6px 22px rgba(102,126,234,.38); }
+    .start-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .leave-txt-btn {
+      background: none; border: none; color: #bbb; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 14px; font-family: var(--font); transition: color .18s;
+    }
+    .leave-txt-btn:hover { color: #888; }
+
+    /* ─── MULTIPLAYER GAME ─── */
+    #multi-screen { min-height: 100vh; flex-direction: column; background: #fff; }
+    .mg-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 40px; border-bottom: 1px solid #f0f0f0;
+    }
+    .mg-scoreboard { display: flex; align-items: center; gap: 18px; }
+    .mg-player { flex: 1; text-align: center; min-width: 90px; }
+    .mg-player-name { font-size: 12px; font-weight: 600; color: #aaa; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mg-player-score { font-size: 36px; font-weight: 800; color: #1a1a1a; letter-spacing: -1px; line-height: 1; }
+    .mg-player.leading .mg-player-score { color: #34a853; }
+    .mg-vs { font-size: 13px; font-weight: 800; color: #ddd; letter-spacing: 1px; flex-shrink: 0; }
+    .mg-body {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 36px 24px 56px; gap: 24px;
+    }
+    .round-lbl { font-size: 11px; font-weight: 700; color: #bbb; letter-spacing: 2px; text-transform: uppercase; }
+    .opp-status { font-size: 13px; color: #bbb; height: 18px; text-align: center; }
+    .opp-status .typing { color: #667eea; font-weight: 600; }
+
+    .first-badge {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%,-50%) scale(0);
+      color: #fff; font-size: 26px; font-weight: 800;
+      padding: 20px 44px; border-radius: 20px; z-index: 500;
+      pointer-events: none; opacity: 0;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+    }
+    .first-badge.show { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+
     /* Responsive */
     @media (max-width: 640px) {
       .g-header { padding: 14px 18px; }
@@ -680,14 +913,39 @@
 <!-- ═══════════════════════════════════════════
      DIFFICULTY SELECTION SCREEN
 ════════════════════════════════════════════ -->
-<div id="difficulty-screen" class="screen active">
+<div id="difficulty-screen" class="screen active" style="position:relative">
+  <!-- Online counter top-left -->
+  <div class="online-counter">
+    <span class="online-dot"></span>
+    Online Players: <strong class="online-count-val">—</strong>
+  </div>
+
   <div class="logo">Spell<em>aword</em></div>
   <div class="tagline">Master spelling one word at a time</div>
   <div class="word-count-badge">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     800 words · 8 levels · AI voice
   </div>
-  <div class="difficulty-grid" id="difficulty-grid"></div>
+
+  <!-- Mode selection -->
+  <div class="mode-btns">
+    <button class="mode-btn" onclick="selectMode('single',this)">
+      <span class="mode-btn-icon">🎮</span>
+      <span class="mode-btn-label">Singleplayer</span>
+      <span class="mode-btn-sub">Play at your own pace</span>
+    </button>
+    <button class="mode-btn" onclick="selectMode('multi',this)">
+      <span class="mode-btn-icon">👥</span>
+      <span class="mode-btn-label">Multiplayer</span>
+      <span class="mode-btn-sub">Race against others</span>
+    </button>
+  </div>
+
+  <!-- Difficulty grid (shown when Singleplayer chosen) -->
+  <div id="difficulty-section" style="display:none;width:100%;max-width:1020px">
+    <div class="section-hd" style="text-align:center;margin-bottom:18px">Choose Difficulty</div>
+    <div class="difficulty-grid" id="difficulty-grid"></div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -797,6 +1055,147 @@
     <button class="btn-back" onclick="backToMenu()">Choose Level</button>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════
+     LOBBY SCREEN
+════════════════════════════════════════════ -->
+<div id="lobby-screen" class="screen">
+  <div class="lobby-header">
+    <button class="back-icon-btn" onclick="showScreen('difficulty-screen')">←</button>
+    <div class="lobby-title">Multiplayer</div>
+    <div class="lobby-online">
+      <span class="online-dot"></span>
+      <strong class="online-count-val">—</strong> online
+    </div>
+  </div>
+
+  <!-- Create / Join cards -->
+  <div class="lobby-options">
+    <div class="lobby-card" id="create-card" onclick="togglePanel('create')">
+      <div class="lobby-card-icon">🏠</div>
+      <div class="lobby-card-title">Create Room</div>
+      <div class="lobby-card-desc">Start a new game room</div>
+    </div>
+    <div class="lobby-card" id="join-card" onclick="togglePanel('join')">
+      <div class="lobby-card-icon">🚪</div>
+      <div class="lobby-card-title">Join Room</div>
+      <div class="lobby-card-desc">Enter a room code</div>
+    </div>
+  </div>
+
+  <!-- Create panel -->
+  <div class="lobby-panel" id="create-panel">
+    <div class="lobby-panel-title">Create a Room</div>
+    <input class="lobby-input" id="room-name-input" placeholder="Room name (e.g. Study Group)" maxlength="30">
+    <input class="lobby-input" id="host-name-input" placeholder="Your nickname" maxlength="20">
+    <div style="margin-bottom:14px">
+      <div class="section-hd" style="margin-bottom:8px">Difficulty</div>
+      <div class="level-select-row" id="create-level-row"></div>
+    </div>
+    <div class="lobby-row">
+      <label class="toggle-label">
+        <div class="toggle-sw on" id="public-toggle" onclick="togglePublic()"><div class="toggle-knob"></div></div>
+        Public — visible to everyone
+      </label>
+    </div>
+    <button class="lobby-btn" onclick="createRoom()">🚀 Create Room</button>
+  </div>
+
+  <!-- Join panel -->
+  <div class="lobby-panel" id="join-panel">
+    <div class="lobby-panel-title">Join a Room</div>
+    <input class="lobby-input" id="join-name-input" placeholder="Your nickname" maxlength="20">
+    <input class="lobby-input" id="join-code-input" placeholder="Room code (e.g. ABC123)"
+           maxlength="6" style="text-transform:uppercase;letter-spacing:5px;font-family:monospace;font-size:22px;text-align:center"
+           oninput="this.value=this.value.toUpperCase()">
+    <button class="lobby-btn" onclick="joinRoomByCode()">Join Room</button>
+  </div>
+
+  <!-- Public rooms -->
+  <div class="public-rooms-section">
+    <div class="section-hd">Public Rooms</div>
+    <div class="room-list" id="public-rooms-list">
+      <div class="no-rooms">No public rooms yet. Create one!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     WAITING ROOM SCREEN
+════════════════════════════════════════════ -->
+<div id="waiting-screen" class="screen">
+  <div class="wait-code-card">
+    <div class="wait-room-name" id="wait-room-name">Room</div>
+    <div class="wait-code-big" id="wait-code">——</div>
+    <div class="wait-code-hint">Share this code with a friend</div>
+    <button class="copy-btn" onclick="copyRoomCode()">Copy Code</button>
+  </div>
+
+  <div class="wait-players">
+    <div class="wait-players-title">Players</div>
+    <div id="wait-players-list"></div>
+  </div>
+
+  <button class="start-btn" id="start-btn" onclick="hostStartGame()" disabled>
+    Waiting for players…
+  </button>
+  <button class="leave-txt-btn" onclick="leaveRoom()">Leave Room</button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MULTIPLAYER GAME SCREEN
+════════════════════════════════════════════ -->
+<div id="multi-screen" class="screen">
+  <header class="mg-header">
+    <div class="g-logo">Spell<em>aword</em></div>
+    <div class="mg-scoreboard">
+      <div class="mg-player" id="mg-me">
+        <div class="mg-player-name" id="mg-me-name">You</div>
+        <div class="mg-player-score" id="mg-me-score">0</div>
+      </div>
+      <div class="mg-vs">VS</div>
+      <div class="mg-player" id="mg-opp">
+        <div class="mg-player-name" id="mg-opp-name">Opponent</div>
+        <div class="mg-player-score" id="mg-opp-score">0</div>
+      </div>
+    </div>
+    <button class="quit-btn" onclick="leaveRoom()">Leave</button>
+  </header>
+
+  <div class="mg-body">
+    <div class="round-lbl" id="mg-round">Round 1 / 10</div>
+
+    <div class="def-card">
+      <div class="def-lbl">Definition</div>
+      <div class="def-text" id="mg-def">Loading…</div>
+    </div>
+
+    <div class="blanks-row" id="mg-blanks"></div>
+    <div class="opp-status" id="mg-opp-status"></div>
+
+    <div class="audio-row">
+      <button class="speak-btn" id="mg-speak-btn" onclick="speakMultiWord()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        Hear Word
+      </button>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <input type="text" class="spell-input" id="mg-input"
+               placeholder="Type your answer…"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               onkeydown="if(event.key==='Enter')submitMultiAnswer()"
+               oninput="handleMultiInput(event)">
+        <button class="submit-btn" id="mg-submit-btn" onclick="submitMultiAnswer()">Submit</button>
+      </div>
+      <div class="answer-hint" id="mg-answer-hint"></div>
+    </div>
+  </div>
+</div>
+
+<!-- First badge overlay -->
+<div class="first-badge" id="first-badge">🎯 FIRST!</div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -2142,8 +2541,512 @@ if (window.speechSynthesis) {
   loadVoices(); // try immediately (works in Firefox/Safari)
 }
 
+// ════════════════════════════════════════════════════════════
+//  FIREBASE CONFIG
+//  ⚠️  Replace with YOUR Firebase project config:
+//  1. Go to https://console.firebase.google.com
+//  2. Create project → Realtime Database (test mode)
+//  3. Project Settings → Your apps → Web → copy config below
+// ════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyD-placeholder-replace-me",
+  authDomain:        "spellaword-rtdb.firebaseapp.com",
+  databaseURL:       "https://spellaword-rtdb-default-rtdb.firebaseio.com",
+  projectId:         "spellaword-rtdb",
+  storageBucket:     "spellaword-rtdb.appspot.com",
+  messagingSenderId: "000000000000",
+  appId:             "1:000000000000:web:placeholder"
+};
+
+let db = null;
+let firebaseReady = false;
+
+function initFirebase() {
+  try {
+    if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.includes('placeholder')) {
+      console.warn('[Spellaword] Firebase not configured — multiplayer disabled.');
+      return;
+    }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    firebaseReady = true;
+    initPresence();
+    watchOnlineCount();
+    watchPublicRooms();
+  } catch(e) {
+    console.error('[Spellaword] Firebase init error:', e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  USER IDENTITY
+// ════════════════════════════════════════════════════════════
+let myUid  = localStorage.getItem('sw_uid')  || ('u_' + Math.random().toString(36).substr(2,9));
+let myName = localStorage.getItem('sw_name') || '';
+localStorage.setItem('sw_uid', myUid);
+
+// ════════════════════════════════════════════════════════════
+//  PRESENCE — online counter
+// ════════════════════════════════════════════════════════════
+function initPresence() {
+  if (!db) return;
+  const ref = db.ref('presence/' + myUid);
+  ref.set({ name: myName || 'Anonymous', ts: Date.now() });
+  ref.onDisconnect().remove();
+  setInterval(() => ref.update({ ts: Date.now() }), 20000);
+}
+
+function watchOnlineCount() {
+  if (!db) return;
+  db.ref('presence').on('value', snap => {
+    const now = Date.now();
+    let n = 0;
+    snap.forEach(c => { if (now - (c.val()?.ts || 0) < 35000) n++; });
+    document.querySelectorAll('.online-count-val').forEach(el => el.textContent = n);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODE SELECT
+// ════════════════════════════════════════════════════════════
+function selectMode(mode, btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (mode === 'single') {
+    const sec = document.getElementById('difficulty-section');
+    sec.style.display = 'block';
+    setTimeout(() => sec.scrollIntoView({ behavior:'smooth', block:'start' }), 60);
+  } else {
+    if (!firebaseReady) {
+      showToast('⚠️ Firebase not configured yet — check the code!', 't-info');
+      return;
+    }
+    showScreen('lobby-screen');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  LOBBY — create / join panels
+// ════════════════════════════════════════════════════════════
+let isPublicRoom  = true;
+let createLevel   = 'normal';
+let currentCode   = null;
+let currentRoomRef = null;
+
+function togglePanel(which) {
+  ['create','join'].forEach(k => {
+    document.getElementById(k+'-panel').classList.toggle('open', k === which && !document.getElementById(k+'-panel').classList.contains('open'));
+    document.getElementById(k+'-card').classList.toggle('active', k === which && document.getElementById(k+'-panel').classList.contains('open'));
+  });
+}
+
+function togglePublic() {
+  isPublicRoom = !isPublicRoom;
+  document.getElementById('public-toggle').classList.toggle('on', isPublicRoom);
+}
+
+function buildCreateLevelRow() {
+  const row = document.getElementById('create-level-row');
+  if (!row) return;
+  row.innerHTML = '';
+  levels.forEach(lv => {
+    const c = document.createElement('div');
+    c.className = 'lv-chip' + (lv.id === createLevel ? ' sel' : '');
+    c.textContent = lv.label;
+    c.onclick = () => {
+      createLevel = lv.id;
+      row.querySelectorAll('.lv-chip').forEach(x => x.classList.remove('sel'));
+      c.classList.add('sel');
+    };
+    row.appendChild(c);
+  });
+}
+
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+async function createRoom() {
+  if (!db) { showToast('Firebase not configured', 't-info'); return; }
+  const name  = document.getElementById('room-name-input').value.trim() || 'Untitled Room';
+  const hName = document.getElementById('host-name-input').value.trim() || 'Anonymous';
+  myName = hName; localStorage.setItem('sw_name', myName);
+
+  const code     = genCode();
+  const wordList = shuffle([...wordDB[createLevel]]).slice(0, 10).map(w => ({w:w.w, d:w.d}));
+
+  await db.ref('rooms/' + code).set({
+    name, code, host: myUid, hostName: hName, level: createLevel,
+    public: isPublicRoom, status: 'waiting', createdAt: Date.now(),
+    players: { [myUid]: { name: hName, score: 0 } },
+    wordList, currentWordIdx: 0, roundWinner: null
+  });
+  db.ref('rooms/' + code).onDisconnect().remove();
+  enterWaiting(code, name);
+}
+
+async function joinRoomByCode(codeOverride) {
+  if (!db) { showToast('Firebase not configured', 't-info'); return; }
+  const jName = (document.getElementById('join-name-input')?.value.trim()) || myName || 'Anonymous';
+  const code  = (codeOverride || document.getElementById('join-code-input')?.value.trim().toUpperCase());
+  if (!code || code.length !== 6) { showToast('Enter a valid 6-character code', 't-info'); return; }
+
+  myName = jName; localStorage.setItem('sw_name', myName);
+
+  const snap = await db.ref('rooms/' + code).get();
+  if (!snap.exists())                               { showToast('Room not found', 't-wrong'); return; }
+  const r = snap.val();
+  if (r.status !== 'waiting')                       { showToast('Game already started', 't-wrong'); return; }
+  if (Object.keys(r.players||{}).length >= 2)       { showToast('Room is full (max 2 players)', 't-wrong'); return; }
+
+  await db.ref('rooms/' + code + '/players/' + myUid).set({ name: jName, score: 0 });
+  enterWaiting(code, r.name);
+}
+
+function enterWaiting(code, roomName) {
+  currentCode    = code;
+  currentRoomRef = db.ref('rooms/' + code);
+  document.getElementById('wait-room-name').textContent = roomName;
+  document.getElementById('wait-code').textContent      = code;
+  showScreen('waiting-screen');
+
+  currentRoomRef.on('value', snap => {
+    if (!snap.exists()) { leaveRoom(false); showScreen('lobby-screen'); return; }
+    const r = snap.val();
+    renderWaitingPlayers(r);
+    if (r.status === 'playing') startMultiScreen(r);
+  });
+}
+
+function renderWaitingPlayers(room) {
+  const list   = document.getElementById('wait-players-list');
+  const players = room.players || {};
+  list.innerHTML = '';
+
+  Object.entries(players).forEach(([uid, p]) => {
+    const div = document.createElement('div');
+    div.className = 'player-slot' + (uid === myUid ? ' me' : '');
+    div.innerHTML = `
+      <div class="p-avatar">${(p.name||'?')[0].toUpperCase()}</div>
+      <div class="p-name">${p.name||'Anonymous'}</div>
+      ${uid === myUid    ? '<span class="p-tag">You</span>'  : ''}
+      ${uid === room.host? '<span class="p-tag host">Host</span>' : ''}
+    `;
+    list.appendChild(div);
+  });
+
+  // Empty slot if only 1 player
+  if (Object.keys(players).length < 2) {
+    const div = document.createElement('div');
+    div.className = 'wait-empty';
+    div.innerHTML = `<div class="p-avatar" style="background:#f0f0f0">?</div>
+      <span>Waiting for player…</span>
+      <div class="dot-loader"><span></span><span></span><span></span></div>`;
+    list.appendChild(div);
+  }
+
+  const btn     = document.getElementById('start-btn');
+  const isHost  = room.host === myUid;
+  const canStart = Object.keys(players).length >= 2;
+  btn.style.display = isHost ? '' : 'none';
+  btn.disabled      = !canStart;
+  btn.textContent   = canStart ? '🎮 Start Game!' : 'Waiting for players…';
+
+  if (!isHost && !document.getElementById('host-wait-txt')) {
+    const p = document.createElement('p');
+    p.id = 'host-wait-txt';
+    p.style.cssText = 'color:#bbb;font-size:14px;margin-top:12px;text-align:center';
+    p.textContent = 'Waiting for the host to start…';
+    btn.parentNode.appendChild(p);
+  }
+}
+
+async function hostStartGame() {
+  if (!db || !currentCode) return;
+  await db.ref('rooms/' + currentCode).update({ status: 'playing' });
+}
+
+function copyRoomCode() {
+  const code = document.getElementById('wait-code')?.textContent;
+  if (code) navigator.clipboard.writeText(code).then(() => showToast('✓ Code copied!', 't-correct'));
+}
+
+// ════════════════════════════════════════════════════════════
+//  PUBLIC ROOMS LIST
+// ════════════════════════════════════════════════════════════
+function watchPublicRooms() {
+  if (!db) return;
+  db.ref('rooms').on('value', snap => {
+    const list = document.getElementById('public-rooms-list');
+    if (!list) return;
+    list.innerHTML = '';
+    let n = 0;
+    snap.forEach(child => {
+      const r = child.val();
+      if (!r.public || r.status !== 'waiting') return;
+      n++;
+      const lv  = levels.find(l => l.id === r.level) || levels[2];
+      const cnt = Object.keys(r.players||{}).length;
+      const item = document.createElement('div');
+      item.className = 'room-item';
+      item.innerHTML = `
+        <div>
+          <div class="room-item-name">${r.name||'Untitled Room'}</div>
+          <div class="room-item-meta">
+            <span class="room-host-txt">Host: ${r.hostName||'Anonymous'}</span>
+            <span class="room-lv-chip" style="background:${lv.bg};color:${lv.color}">${lv.label}</span>
+          </div>
+        </div>
+        <div class="room-right">
+          <span class="room-players-txt">👤 ${cnt}/2</span>
+          <button class="join-btn" onclick="quickJoin('${child.key}')">Join</button>
+        </div>`;
+      list.appendChild(item);
+    });
+    if (n === 0) list.innerHTML = '<div class="no-rooms">No public rooms yet. Create one!</div>';
+  });
+}
+
+function quickJoin(code) {
+  const name = prompt('Enter your nickname:') || 'Anonymous';
+  if (document.getElementById('join-name-input')) document.getElementById('join-name-input').value = name;
+  joinRoomByCode(code);
+}
+
+// ════════════════════════════════════════════════════════════
+//  MULTIPLAYER GAME
+// ════════════════════════════════════════════════════════════
+let ms = { room:null, wordIdx:0, myScore:0, oppScore:0, answered:false, oppUid:null };
+
+function startMultiScreen(room) {
+  const uids = Object.keys(room.players||{});
+  ms = { room, wordIdx: room.currentWordIdx||0, myScore:0, oppScore:0, answered:false,
+         oppUid: uids.find(u => u !== myUid) || null };
+  showScreen('multi-screen');
+  renderMultiWord();
+
+  // Sync word index from host
+  currentRoomRef.child('currentWordIdx').on('value', snap => {
+    const idx = snap.val() || 0;
+    if (idx !== ms.wordIdx) {
+      ms.wordIdx   = idx;
+      ms.answered  = false;
+      ms.room = Object.assign({}, ms.room, { currentWordIdx: idx });
+      if (idx >= ms.room.wordList.length) { endMultiGame(); return; }
+      renderMultiWord();
+    }
+  });
+
+  // Opponent score
+  if (ms.oppUid) {
+    currentRoomRef.child('players/' + ms.oppUid + '/score').on('value', snap => {
+      ms.oppScore = snap.val() || 0;
+      document.getElementById('mg-opp-score').textContent = ms.oppScore;
+      syncLeading();
+    });
+    // Opponent typing indicator
+    currentRoomRef.child('typing/' + ms.oppUid).on('value', snap => {
+      const t = snap.val();
+      const el = document.getElementById('mg-opp-status');
+      if (t && (Date.now() - t) < 3000) {
+        el.innerHTML = '<span class="typing">✏️ Opponent is typing…</span>';
+      } else {
+        el.innerHTML = '';
+      }
+    });
+  }
+
+  // Round winner badge
+  currentRoomRef.child('roundWinner').on('value', snap => {
+    const w = snap.val();
+    if (!w) return;
+    if (w === myUid)   showFirstBadge('🎯 FIRST!',   'linear-gradient(135deg,#34a853,#1e7e34)');
+    else               showFirstBadge('😅 Too slow!', 'linear-gradient(135deg,#ea4335,#c5221f)');
+  });
+}
+
+function renderMultiWord() {
+  const wl   = ms.room?.wordList;
+  if (!wl || ms.wordIdx >= wl.length) { endMultiGame(); return; }
+  const word = wl[ms.wordIdx];
+
+  document.getElementById('mg-def').textContent   = word.d;
+  document.getElementById('mg-round').textContent = `Round ${ms.wordIdx+1} / ${wl.length}`;
+
+  // Player names
+  const ps   = ms.room.players || {};
+  document.getElementById('mg-me-name').textContent  = ps[myUid]?.name  || 'You';
+  document.getElementById('mg-opp-name').textContent = ms.oppUid ? (ps[ms.oppUid]?.name||'Opponent') : 'Opponent';
+  document.getElementById('mg-me-score').textContent  = ms.myScore;
+  document.getElementById('mg-opp-score').textContent = ms.oppScore;
+  syncLeading();
+
+  // Blanks
+  const br = document.getElementById('mg-blanks');
+  br.innerHTML = '';
+  for (let i = 0; i < word.w.length; i++) {
+    const s = document.createElement('span');
+    s.className = 'blank-char' + (i===0?' active':'');
+    s.textContent = '_';
+    br.appendChild(s);
+  }
+
+  // Input reset
+  const inp = document.getElementById('mg-input');
+  inp.value = ''; inp.className = 'spell-input'; inp.disabled = false; inp.focus();
+  document.getElementById('mg-answer-hint').innerHTML = '';
+  document.getElementById('mg-opp-status').innerHTML  = '';
+  document.getElementById('mg-submit-btn').disabled   = false;
+
+  setTimeout(() => speakMultiWord(), 350);
+}
+
+function syncLeading() {
+  document.getElementById('mg-me').classList.toggle('leading',  ms.myScore > ms.oppScore);
+  document.getElementById('mg-opp').classList.toggle('leading', ms.oppScore > ms.myScore);
+}
+
+function handleMultiInput(e) {
+  const word = ms.room?.wordList[ms.wordIdx];
+  if (!word) return;
+  const typed = e.target.value.toLowerCase().replace(/\s/g,'');
+  e.target.value = typed;
+
+  const blanks = document.querySelectorAll('#mg-blanks .blank-char');
+  blanks.forEach((b,i) => {
+    b.textContent = typed[i] || '_';
+    b.classList.toggle('active', i === typed.length);
+  });
+
+  // Broadcast typing
+  if (db && currentCode && typed.length > 0) {
+    db.ref('rooms/' + currentCode + '/typing/' + myUid).set(Date.now());
+  }
+}
+
+async function submitMultiAnswer() {
+  if (ms.answered || !ms.room) return;
+  const inp   = document.getElementById('mg-input');
+  const typed = inp.value.trim().toLowerCase();
+  if (!typed) return;
+
+  const word    = ms.room.wordList[ms.wordIdx];
+  const correct = typed === word.w.toLowerCase();
+
+  if (correct) {
+    ms.answered = true;
+    ms.myScore++;
+    inp.classList.add('inp-correct');
+    document.getElementById('mg-submit-btn').disabled = true;
+
+    if (db && currentCode) {
+      // Set round winner (only first correct counts)
+      const winSnap = await db.ref('rooms/' + currentCode + '/roundWinner').get();
+      if (!winSnap.val()) {
+        await db.ref('rooms/' + currentCode + '/roundWinner').set(myUid);
+      }
+      // Update my score
+      await db.ref('rooms/' + currentCode + '/players/' + myUid + '/score').set(ms.myScore);
+
+      // Host advances the word index
+      if (ms.room.host === myUid) {
+        setTimeout(async () => {
+          await db.ref('rooms/' + currentCode).update({
+            currentWordIdx: ms.wordIdx + 1,
+            roundWinner: null
+          });
+        }, 2000);
+      }
+    }
+    document.getElementById('mg-me-score').textContent = ms.myScore;
+    syncLeading();
+    showToast('✓ Correct! +1', 't-correct');
+  } else {
+    inp.classList.add('inp-wrong');
+    document.getElementById('mg-answer-hint').innerHTML =
+      `The correct spelling was: <span>${word.w}</span>`;
+    setTimeout(() => { inp.classList.remove('inp-wrong'); inp.value = ''; inp.focus(); }, 900);
+  }
+}
+
+function speakMultiWord() {
+  const word = ms.room?.wordList[ms.wordIdx];
+  if (!word) return;
+  const btn = document.getElementById('mg-speak-btn');
+  if (!btn) return;
+  window.speechSynthesis?.cancel();
+  btn.classList.add('speaking'); btn.disabled = true;
+  const v = selectedVoice;
+  function u(t, r) {
+    const ut = new SpeechSynthesisUtterance(t);
+    ut.rate=r; ut.pitch=1; ut.volume=1; if(v) ut.voice=v; return ut;
+  }
+  const u3 = u(word.w, 0.52);
+  u3.onend = () => { btn.classList.remove('speaking'); btn.disabled = false; };
+  window.speechSynthesis?.speak(u('Spell the word:', 0.88));
+  window.speechSynthesis?.speak(u(word.w, 0.78));
+  window.speechSynthesis?.speak(u3);
+}
+
+function showFirstBadge(text, bg) {
+  const b = document.getElementById('first-badge');
+  if (!b) return;
+  b.textContent = text; b.style.background = bg;
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 2000);
+}
+
+function endMultiGame() {
+  const total = ms.room?.wordList?.length || 10;
+  const myS = ms.myScore, oppS = ms.oppScore;
+  let icon, title, sub;
+  if      (myS > oppS)  { icon='🏆'; title='You Win!';    sub=`You scored ${myS}/${total}`; }
+  else if (myS < oppS)  { icon='😔'; title='You Lost';    sub=`Opponent scored ${oppS}. Keep practicing!`; }
+  else                  { icon='🤝'; title="It's a Tie!"; sub=`Both scored ${myS}/${total}`; }
+
+  document.getElementById('res-icon').textContent    = icon;
+  document.getElementById('res-title').textContent   = title;
+  document.getElementById('res-sub').textContent     = sub;
+  document.getElementById('r-score').textContent     = myS * 10;
+  document.getElementById('r-correct').textContent   = `${myS}/${total}`;
+  document.getElementById('r-accuracy').textContent  = Math.round(myS/total*100) + '%';
+  document.getElementById('wrong-section').innerHTML = '';
+
+  if (db && currentCode) db.ref('rooms/'+currentCode).update({ status:'finished' });
+  _cleanupRoom();
+  showScreen('result-screen');
+}
+
+function leaveRoom(goHome = true) {
+  if (db && currentCode && myUid) {
+    db.ref('rooms/'+currentCode+'/players/'+myUid).remove();
+    if (ms.room?.host === myUid) db.ref('rooms/'+currentCode).remove();
+  }
+  _cleanupRoom();
+  if (goHome) showScreen('lobby-screen');
+}
+
+function _cleanupRoom() {
+  if (currentRoomRef) { currentRoomRef.off(); currentRoomRef = null; }
+  currentCode = null;
+  ms = { room:null, wordIdx:0, myScore:0, oppScore:0, answered:false, oppUid:null };
+}
+
+// ════════════════════════════════════════════════════════════
+//  OVERRIDE backToMenu to support multi result screen
+// ════════════════════════════════════════════════════════════
+const _origBackToMenu = backToMenu;
+backToMenu = function() {
+  window.speechSynthesis?.cancel();
+  _cleanupRoom();
+  showScreen('difficulty-screen');
+};
+
 // Init
 buildDifficultyGrid();
+buildCreateLevelRow();
+initFirebase();
 </script>
 </body>
 </html>
