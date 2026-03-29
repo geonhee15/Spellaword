@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spellaword</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      --radius: 18px;
+      --shadow-sm: 0 2px 12px rgba(0,0,0,.06);
+      --shadow-md: 0 8px 32px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: var(--font);
+      background: #fff;
+      color: #1a1a1a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── SCREEN VISIBILITY ─── */
+    .screen { display: none; }
+    .screen.active { display: flex; }
+
+    /* ─── DIFFICULTY SCREEN ─── */
+    #difficulty-screen {
+      min-height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 24px 80px;
+      background: #fff;
+    }
+
+    .logo {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .logo em {
+      font-style: normal;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      font-size: 15px;
+      color: #aaa;
+      font-weight: 400;
+      letter-spacing: 0.3px;
+      margin-bottom: 16px;
+    }
+
+    .word-count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f5f5f7;
+      color: #666;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 40px;
+      margin-bottom: 52px;
+    }
+
+    .difficulty-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 16px;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    .d-card {
+      border: 1.5px solid #ebebeb;
+      border-radius: var(--radius);
+      padding: 26px 24px 22px;
+      cursor: pointer;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .d-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--c);
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .d-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+      border-color: transparent;
+    }
+
+    .d-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      padding: 4px 11px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      background: var(--cbg);
+      color: var(--c);
+    }
+    .d-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #1a1a1a;
+      margin-bottom: 7px;
+    }
+    .d-desc {
+      font-size: 12.5px;
+      color: #999;
+      line-height: 1.65;
+      margin-bottom: 14px;
+    }
+    .d-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .d-chip {
+      background: #f5f5f7;
+      font-size: 11px;
+      font-weight: 500;
+      color: #666;
+      padding: 3px 9px;
+      border-radius: 7px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* level colors */
+    .lv-easy    { --c: #1e8c3a; --cbg: #e6f4ea; }
+    .lv-novice  { --c: #2c7a2c; --cbg: #edf7ed; }
+    .lv-normal  { --c: #1967d2; --cbg: #e8f0fe; }
+    .lv-hard    { --c: #b46000; --cbg: #fef3e2; }
+    .lv-advanced{ --c: #c5221f; --cbg: #fce8e6; }
+    .lv-expert  { --c: #7b2fbe; --cbg: #f3e8fd; }
+    .lv-genius  { --c: #b31412; --cbg: #fce8e6; }
+    .lv-god     { --c: #202124; --cbg: #f1f3f4; }
+
+    /* ─── GAME SCREEN ─── */
+    #game-screen {
+      min-height: 100vh;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    .g-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 40px;
+      border-bottom: 1px solid #f0f0f0;
+      position: sticky;
+      top: 0;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+
+    .g-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+    }
+    .g-logo em {
+      font-style: normal;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .g-header-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .g-level-pill {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--cbg);
+      color: var(--c);
+    }
+
+    .g-header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .stat-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+    .stat-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1;
+    }
+    .stat-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ccc;
+    }
+
+    .lives-row {
+      display: flex;
+      gap: 4px;
+    }
+    .hrt {
+      font-size: 18px;
+      transition: transform .3s, opacity .3s;
+    }
+    .hrt.lost {
+      opacity: .18;
+      filter: grayscale(1);
+      transform: scale(.85);
+    }
+
+    .quit-btn {
+      background: none;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 10px;
+      padding: 7px 15px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #aaa;
+      cursor: pointer;
+      transition: all .18s;
+      font-family: var(--font);
+    }
+    .quit-btn:hover { border-color: #bbb; color: #666; }
+
+    /* GAME BODY */
+    .g-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px 60px;
+      gap: 28px;
+    }
+
+    /* Definition card */
+    .def-card {
+      background: #f9f9fb;
+      border: 1px solid #efefef;
+      border-radius: 20px;
+      padding: 28px 40px;
+      max-width: 660px;
+      width: 100%;
+      text-align: center;
+    }
+    .def-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #ccc;
+      margin-bottom: 10px;
+    }
+    .def-text {
+      font-size: 19px;
+      color: #2a2a2a;
+      line-height: 1.65;
+      font-weight: 400;
+    }
+
+    /* Blank display */
+    .blanks-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-height: 64px;
+    }
+    .blank-char {
+      width: 28px;
+      text-align: center;
+      border-bottom: 2.5px solid #d0d0d0;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.2;
+      padding-bottom: 2px;
+      transition: border-color .2s;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      letter-spacing: 0;
+    }
+    .blank-char.active { border-color: #667eea; }
+    .blank-char.correct-char { border-color: #34a853; color: #34a853; }
+    .blank-char.wrong-char { border-color: #ea4335; color: #ea4335; }
+
+    /* Audio buttons */
+    .audio-row {
+      display: flex;
+      gap: 10px;
+    }
+    .speak-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 13px;
+      padding: 13px 26px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font);
+    }
+    .speak-btn:hover { background: #333; transform: scale(1.02); }
+    .speak-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .speak-btn.speaking {
+      background: #667eea;
+      animation: pulse-ring .8s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(102,126,234,.4); }
+      70%  { box-shadow: 0 0 0 10px rgba(102,126,234,0); }
+      100% { box-shadow: 0 0 0 0 rgba(102,126,234,0); }
+    }
+
+    .hint-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f5f5f7;
+      color: #666;
+      border: none;
+      border-radius: 13px;
+      padding: 13px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font);
+    }
+    .hint-btn:hover { background: #eee; color: #333; }
+    .hint-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Input area */
+    .input-area {
+      max-width: 660px;
+      width: 100%;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .spell-input {
+      flex: 1;
+      border: 2px solid #e5e5e5;
+      border-radius: 14px;
+      padding: 17px 22px;
+      font-size: 20px;
+      font-weight: 500;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color .2s, background .2s;
+      text-align: center;
+      letter-spacing: 4px;
+      background: #fff;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .spell-input:focus { border-color: #667eea; }
+    .spell-input.inp-correct {
+      border-color: #34a853;
+      background: #f0fff4;
+      color: #1e8c3a;
+    }
+    .spell-input.inp-wrong {
+      border-color: #ea4335;
+      background: #fff5f5;
+      animation: shake .4s ease;
+    }
+    @keyframes shake {
+      0%,100%{ transform: translateX(0); }
+      20%    { transform: translateX(-8px); }
+      40%    { transform: translateX(8px); }
+      60%    { transform: translateX(-6px); }
+      80%    { transform: translateX(5px); }
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 17px 32px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+    .submit-btn:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 22px rgba(102,126,234,.38);
+    }
+    .submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .answer-hint {
+      text-align: center;
+      font-size: 13px;
+      color: #bbb;
+      margin-top: 10px;
+      height: 18px;
+      transition: opacity .3s;
+    }
+    .answer-hint span {
+      color: #ea4335;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      letter-spacing: 2px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      max-width: 660px;
+      width: 100%;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+    .prog-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: #ccc;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .progress-bar {
+      height: 4px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      padding: 11px 26px;
+      border-radius: 40px;
+      font-size: 14px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: all .28s cubic-bezier(.34,1.56,.64,1);
+      z-index: 100;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.t-correct { background: #1e8c3a; color: #fff; }
+    .toast.t-wrong   { background: #c5221f; color: #fff; }
+    .toast.t-info    { background: #1a1a1a; color: #fff; }
+
+    /* ─── RESULT SCREEN ─── */
+    #result-screen {
+      min-height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 72px 24px 80px;
+      background: #fff;
+      overflow-y: auto;
+    }
+
+    .res-icon { font-size: 76px; margin-bottom: 18px; line-height: 1; }
+
+    .res-title {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .res-sub {
+      font-size: 15px;
+      color: #aaa;
+      margin-bottom: 48px;
+      text-align: center;
+    }
+
+    .res-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 580px;
+      width: 100%;
+      margin-bottom: 40px;
+    }
+    .res-stat {
+      background: #f9f9fb;
+      border-radius: 16px;
+      padding: 22px 16px;
+      text-align: center;
+    }
+    .res-stat-n {
+      font-size: 34px;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .res-stat-l {
+      font-size: 10px;
+      font-weight: 700;
+      color: #ccc;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .wrong-section {
+      max-width: 580px;
+      width: 100%;
+      margin-bottom: 44px;
+    }
+    .wrong-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #ccc;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .wrong-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: #fff5f5;
+      border: 1px solid #fce8e8;
+      margin-bottom: 7px;
+    }
+    .wrong-word { font-size: 15px; font-weight: 700; color: #c5221f; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .wrong-your { font-size: 12px; color: #bbb; }
+
+    .res-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn-play-again {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 36px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font);
+    }
+    .btn-play-again:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 22px rgba(102,126,234,.38);
+    }
+    .btn-back {
+      background: #f5f5f7;
+      color: #555;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 36px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--font);
+    }
+    .btn-back:hover { background: #ebebeb; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .g-header { padding: 14px 18px; }
+      .g-body { padding: 30px 16px 48px; gap: 22px; }
+      .def-card { padding: 22px 22px; }
+      .def-text { font-size: 16px; }
+      .blanks-row { gap: 5px; }
+      .blank-char { width: 22px; font-size: 22px; }
+      .res-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     DIFFICULTY SELECTION SCREEN
+════════════════════════════════════════════ -->
+<div id="difficulty-screen" class="screen active">
+  <div class="logo">Spell<em>aword</em></div>
+  <div class="tagline">Master spelling one word at a time</div>
+  <div class="word-count-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    800 words · 8 levels · AI voice
+  </div>
+  <div class="difficulty-grid" id="difficulty-grid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GAME SCREEN
+════════════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+  <header class="g-header">
+    <div class="g-logo">Spell<em>aword</em></div>
+    <div class="g-header-center">
+      <div class="g-level-pill" id="g-level-label">Easy</div>
+    </div>
+    <div class="g-header-right">
+      <div class="stat-group">
+        <div class="stat-val" id="g-score">0</div>
+        <div class="stat-lbl">Score</div>
+      </div>
+      <div class="stat-group">
+        <div class="stat-val" id="g-streak">0</div>
+        <div class="stat-lbl">Streak</div>
+      </div>
+      <div class="stat-group">
+        <div class="lives-row" id="g-lives"></div>
+        <div class="stat-lbl" style="text-align:center">Lives</div>
+      </div>
+      <button class="quit-btn" onclick="quitGame()">Quit</button>
+    </div>
+  </header>
+
+  <div class="g-body">
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="prog-lbl" id="prog-label">Word 1 / 100</span>
+        <span class="prog-lbl" id="prog-pct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Definition -->
+    <div class="def-card">
+      <div class="def-lbl">Definition</div>
+      <div class="def-text" id="g-def">Loading...</div>
+    </div>
+
+    <!-- Blank characters -->
+    <div class="blanks-row" id="blanks-row"></div>
+
+    <!-- Audio controls -->
+    <div class="audio-row">
+      <button class="speak-btn" id="speak-btn" onclick="speakWord()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        Hear Word
+      </button>
+      <button class="hint-btn" id="hint-btn" onclick="useHint()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Hint
+      </button>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-row">
+        <input type="text" class="spell-input" id="spell-input"
+               placeholder="Type your answer…"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               onkeydown="handleKey(event)" oninput="handleInput(event)">
+        <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">Submit</button>
+      </div>
+      <div class="answer-hint" id="answer-hint"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     RESULT SCREEN
+════════════════════════════════════════════ -->
+<div id="result-screen" class="screen">
+  <div class="res-icon" id="res-icon">🎉</div>
+  <div class="res-title" id="res-title">Well Done!</div>
+  <div class="res-sub" id="res-sub">You completed the level</div>
+  <div class="res-stats">
+    <div class="res-stat">
+      <div class="res-stat-n" id="r-score">0</div>
+      <div class="res-stat-l">Score</div>
+    </div>
+    <div class="res-stat">
+      <div class="res-stat-n" id="r-correct">0</div>
+      <div class="res-stat-l">Correct</div>
+    </div>
+    <div class="res-stat">
+      <div class="res-stat-n" id="r-accuracy">0%</div>
+      <div class="res-stat-l">Accuracy</div>
+    </div>
+  </div>
+  <div class="wrong-section" id="wrong-section"></div>
+  <div class="res-actions">
+    <button class="btn-play-again" onclick="playAgain()">Play Again</button>
+    <button class="btn-back" onclick="backToMenu()">Choose Level</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  WORD DATABASE — 8 levels × 100 words
+// ════════════════════════════════════════════════════════════
+const wordDB = {
+  easy: [
+    {w:"cat",d:"A small furry animal that meows and purrs"},
+    {w:"dog",d:"A loyal four-legged pet that barks"},
+    {w:"run",d:"To move quickly on your feet"},
+    {w:"big",d:"Very large in size"},
+    {w:"red",d:"The color of blood or a ripe tomato"},
+    {w:"sun",d:"The bright star that gives light and warmth to Earth"},
+    {w:"hot",d:"Having a very high temperature"},
+    {w:"cup",d:"A small container with a handle used for drinking"},
+    {w:"hat",d:"A covering worn on top of the head"},
+    {w:"map",d:"A picture showing roads, rivers, and places"},
+    {w:"box",d:"A container with four sides and a lid"},
+    {w:"pen",d:"A tool used for writing with ink"},
+    {w:"leg",d:"A limb used for standing and walking"},
+    {w:"ear",d:"The part of the body used for hearing"},
+    {w:"eye",d:"The part of the body used for seeing"},
+    {w:"arm",d:"The limb connecting the shoulder to the hand"},
+    {w:"bed",d:"A piece of furniture used for sleeping"},
+    {w:"bus",d:"A large vehicle that carries many passengers"},
+    {w:"car",d:"A vehicle with four wheels and an engine"},
+    {w:"day",d:"The period of light between sunrise and sunset"},
+    {w:"far",d:"At a great distance from somewhere"},
+    {w:"fun",d:"An enjoyable and entertaining activity"},
+    {w:"ice",d:"Water that has been frozen solid"},
+    {w:"job",d:"Work that someone does to earn money"},
+    {w:"key",d:"A small metal tool used to open a lock"},
+    {w:"lip",d:"One of the two soft edges of the mouth"},
+    {w:"man",d:"An adult male human being"},
+    {w:"net",d:"A mesh of string or wire used for catching things"},
+    {w:"oil",d:"A thick liquid used for cooking or as fuel"},
+    {w:"pin",d:"A thin, sharp piece of metal for fastening things"},
+    {w:"sit",d:"To rest with your bottom on a surface"},
+    {w:"top",d:"The highest part of something"},
+    {w:"war",d:"A conflict between nations or large groups"},
+    {w:"yes",d:"A word used to express agreement or confirmation"},
+    {w:"age",d:"The number of years a person has lived"},
+    {w:"air",d:"The invisible gas mixture we breathe"},
+    {w:"ask",d:"To put a question to someone"},
+    {w:"bad",d:"Not good; unpleasant or harmful"},
+    {w:"bag",d:"A flexible container used for carrying things"},
+    {w:"bar",d:"A long, straight piece of hard material"},
+    {w:"bat",d:"A wooden stick used in sports, or a flying nocturnal mammal"},
+    {w:"bit",d:"A small piece or amount of something"},
+    {w:"cut",d:"To divide something using a sharp tool"},
+    {w:"dry",d:"Free from water or moisture"},
+    {w:"eat",d:"To put food in your mouth and swallow it"},
+    {w:"egg",d:"An oval object laid by birds, used as food"},
+    {w:"end",d:"The final part or conclusion of something"},
+    {w:"fan",d:"A device that moves air to create a breeze"},
+    {w:"fat",d:"Having a lot of stored body weight"},
+    {w:"fly",d:"To move through the air with wings"},
+    {w:"hit",d:"To strike something or someone with force"},
+    {w:"hop",d:"To jump on one foot or in short leaps"},
+    {w:"hug",d:"To hold someone tightly with your arms in affection"},
+    {w:"jam",d:"A sweet spread made from boiled fruit and sugar"},
+    {w:"jar",d:"A glass container with a wide mouth and a lid"},
+    {w:"kid",d:"A young child or informal word for a young person"},
+    {w:"lap",d:"The flat area formed by your thighs when you sit down"},
+    {w:"law",d:"A rule created and enforced by a government"},
+    {w:"lay",d:"To put something down flat on a surface"},
+    {w:"let",d:"To allow something to happen or someone to do something"},
+    {w:"lid",d:"A removable cover for a container"},
+    {w:"lit",d:"Illuminated; set on fire or giving off light"},
+    {w:"log",d:"A thick section of a tree trunk or branch"},
+    {w:"lot",d:"A large amount or number of something"},
+    {w:"low",d:"Not high; close to the ground"},
+    {w:"mad",d:"Very angry, or mentally ill in informal usage"},
+    {w:"mix",d:"To combine two or more things together"},
+    {w:"mud",d:"Wet, sticky soil or earth"},
+    {w:"mug",d:"A large cup with a handle, used for hot drinks"},
+    {w:"nap",d:"A short sleep taken during the day"},
+    {w:"new",d:"Recently made, bought, or discovered"},
+    {w:"nod",d:"To move your head up and down to show agreement"},
+    {w:"old",d:"Having existed or lived for a long time"},
+    {w:"own",d:"Belonging to or done by a particular person"},
+    {w:"pay",d:"To give money in exchange for goods or services"},
+    {w:"pie",d:"A baked dish with a pastry crust and a filling"},
+    {w:"pig",d:"A pink farm animal with a curly tail and snout"},
+    {w:"pop",d:"A sudden sharp sound, or a fizzy drink"},
+    {w:"pot",d:"A deep, round container used for cooking"},
+    {w:"put",d:"To place something in a particular position"},
+    {w:"raw",d:"Not cooked; in its natural state"},
+    {w:"say",d:"To speak words or express something out loud"},
+    {w:"sea",d:"A large body of salt water"},
+    {w:"shy",d:"Nervous or timid around other people"},
+    {w:"sky",d:"The space above the Earth that appears blue in daytime"},
+    {w:"sob",d:"To cry heavily with shaking or convulsive movements"},
+    {w:"spy",d:"A person who secretly gathers information about others"},
+    {w:"tab",d:"A small flap or tag used to open or identify something"},
+    {w:"tap",d:"A light touch, or a device that controls water flow"},
+    {w:"tie",d:"To fasten or join something using a knot or bow"},
+    {w:"tip",d:"The pointed end of something, or a piece of helpful advice"},
+    {w:"toe",d:"One of the five digits at the end of your foot"},
+    {w:"toy",d:"An object made for children to play with"},
+    {w:"try",d:"To make an attempt or effort to do something"},
+    {w:"van",d:"A large vehicle with an enclosed back used for carrying goods"},
+    {w:"wet",d:"Covered with or soaked in liquid, especially water"},
+    {w:"win",d:"To come first or be victorious in a competition"},
+    {w:"zip",d:"To close something using a zipper"},
+    {w:"zoo",d:"A place where wild animals are kept for people to visit"}
+  ],
+  novice: [
+    {w:"apple",d:"A round fruit that can be red, green, or yellow"},
+    {w:"happy",d:"Feeling joy and contentment"},
+    {w:"smile",d:"A facial expression showing pleasure or amusement"},
+    {w:"dance",d:"To move your body rhythmically to music"},
+    {w:"house",d:"A building in which people live"},
+    {w:"light",d:"Brightness from the sun or an artificial source"},
+    {w:"brown",d:"A dark color resembling chocolate or wood"},
+    {w:"grass",d:"Green plants with narrow leaves that cover lawns"},
+    {w:"bread",d:"A food made by baking dough made from flour"},
+    {w:"clean",d:"Free from dirt, marks, or mess"},
+    {w:"sleep",d:"To rest with your eyes closed and your mind inactive"},
+    {w:"water",d:"A clear, colorless liquid essential for all life"},
+    {w:"money",d:"Coins and paper notes used to buy things"},
+    {w:"cloud",d:"A white or grey mass of water droplets in the sky"},
+    {w:"plant",d:"A living organism with leaves and roots that grows in soil"},
+    {w:"stone",d:"A small, hard piece of rock"},
+    {w:"sweet",d:"Having a pleasant sugary taste"},
+    {w:"river",d:"A large, natural stream of water flowing into the sea"},
+    {w:"teach",d:"To help someone learn knowledge or a skill"},
+    {w:"visit",d:"To go to see a person or place"},
+    {w:"angry",d:"Feeling strong displeasure or rage about something"},
+    {w:"bring",d:"To carry something or someone to a place"},
+    {w:"catch",d:"To grab and hold something that is moving"},
+    {w:"drive",d:"To operate and control a vehicle"},
+    {w:"early",d:"Happening or arriving before the expected time"},
+    {w:"floor",d:"The lower surface of a room that you walk on"},
+    {w:"grain",d:"A small, hard seed from a cereal plant like wheat or rice"},
+    {w:"green",d:"The color of leaves and growing plants"},
+    {w:"heart",d:"The organ in your chest that pumps blood through your body"},
+    {w:"large",d:"Of great size; bigger than average"},
+    {w:"learn",d:"To gain knowledge or a skill through study or experience"},
+    {w:"often",d:"Many times; frequently"},
+    {w:"paint",d:"To cover a surface with colored paint, or the paint itself"},
+    {w:"quiet",d:"Making little or no noise; peaceful and calm"},
+    {w:"reach",d:"To stretch out your arm to touch or get something"},
+    {w:"ready",d:"Prepared and willing to do something"},
+    {w:"share",d:"To give part of something to another person"},
+    {w:"short",d:"Small in length or height; brief in time"},
+    {w:"since",d:"From a particular time in the past until now"},
+    {w:"small",d:"Little in size; not large"},
+    {w:"smell",d:"To sense an odor through your nose"},
+    {w:"sound",d:"Vibrations that travel through the air and are heard"},
+    {w:"speak",d:"To say words or express yourself out loud"},
+    {w:"spend",d:"To use money to pay for something"},
+    {w:"start",d:"To begin doing something"},
+    {w:"still",d:"Not moving; calm and quiet"},
+    {w:"store",d:"A place where goods are sold to the public"},
+    {w:"story",d:"An account of events, whether real or imaginary"},
+    {w:"study",d:"To learn about a subject by reading and practicing"},
+    {w:"sugar",d:"A sweet substance used to flavor and preserve food"},
+    {w:"table",d:"A piece of furniture with a flat top supported by legs"},
+    {w:"tired",d:"Feeling the need to rest or sleep"},
+    {w:"today",d:"On this present day"},
+    {w:"toast",d:"Bread that has been browned by exposure to heat"},
+    {w:"touch",d:"To make contact with something using your hand or fingers"},
+    {w:"tower",d:"A tall, narrow structure or building"},
+    {w:"train",d:"A vehicle that runs on rails, used to transport people"},
+    {w:"treat",d:"A special pleasure or food enjoyed as a reward"},
+    {w:"truck",d:"A large, heavy vehicle used for transporting goods"},
+    {w:"trust",d:"The belief that someone is honest and reliable"},
+    {w:"twice",d:"Two times; on two occasions"},
+    {w:"under",d:"Directly below or beneath something"},
+    {w:"until",d:"Up to the point in time when something happens"},
+    {w:"upset",d:"Feeling unhappy, disappointed, or disturbed"},
+    {w:"value",d:"The importance, worth, or usefulness of something"},
+    {w:"voice",d:"The sound produced when you speak or sing"},
+    {w:"waste",d:"To use more of something than is needed"},
+    {w:"watch",d:"To look at something carefully; also a timepiece worn on wrist"},
+    {w:"where",d:"In, at, or to what place"},
+    {w:"while",d:"During the time that something is happening"},
+    {w:"white",d:"The lightest color, like fresh snow or milk"},
+    {w:"whole",d:"Including all parts; complete and entire"},
+    {w:"woman",d:"An adult female human being"},
+    {w:"world",d:"The Earth and all the people and things living on it"},
+    {w:"worry",d:"To feel anxious or troubled about something"},
+    {w:"write",d:"To form letters or words on a surface using a pen or pencil"},
+    {w:"wrong",d:"Not correct, appropriate, or desirable"},
+    {w:"young",d:"Having lived or existed for only a short time"},
+    {w:"above",d:"At a higher level or position than something"},
+    {w:"below",d:"At a lower level or position than something"},
+    {w:"extra",d:"More than what is usual or expected"},
+    {w:"never",d:"At no time; not ever"},
+    {w:"night",d:"The dark period between sunset and sunrise"},
+    {w:"paper",d:"A thin, flat material used for writing or printing"},
+    {w:"party",d:"A social gathering for celebration and enjoyment"},
+    {w:"after",d:"Following in time or order"},
+    {w:"alike",d:"Similar to each other in appearance or nature"},
+    {w:"alone",d:"Without other people; by yourself"},
+    {w:"along",d:"Moving in the same direction as something"},
+    {w:"among",d:"Surrounded by or in the middle of a group"},
+    {w:"blank",d:"Not written or printed on; empty"},
+    {w:"brave",d:"Showing courage and willingness to face danger"},
+    {w:"broke",d:"Past tense of break; having no money"},
+    {w:"chose",d:"Past tense of choose; selected from options"},
+    {w:"climb",d:"To go up using your hands and feet"},
+    {w:"close",d:"Near in space, time, or relationship"},
+    {w:"color",d:"The visual property of objects due to light reflection"},
+    {w:"count",d:"To find the total number of something by adding one by one"},
+    {w:"could",d:"Past tense of can; used to express possibility"},
+    {w:"every",d:"Each one individually in a group; all"},
+    {w:"first",d:"Coming before all others in time or order"}
+  ],
+  normal: [
+    {w:"action",d:"The process of doing something to achieve a result"},
+    {w:"reason",d:"A cause or explanation for something happening"},
+    {w:"travel",d:"To go from one place to another, often to a distant location"},
+    {w:"garden",d:"A piece of land used for growing plants, flowers, or vegetables"},
+    {w:"simple",d:"Easy to understand, do, or deal with"},
+    {w:"yellow",d:"The bright color of the sun or a ripe lemon"},
+    {w:"winter",d:"The coldest season of the year"},
+    {w:"summer",d:"The warmest season of the year"},
+    {w:"purple",d:"A color made by mixing red and blue"},
+    {w:"bottle",d:"A container with a narrow neck used to hold liquids"},
+    {w:"bridge",d:"A structure built over a river or road to allow crossing"},
+    {w:"butter",d:"A yellow, fatty spread made from churned cream"},
+    {w:"camera",d:"A device used to take photographs or record videos"},
+    {w:"candle",d:"A wax cylinder with a wick burned to provide light"},
+    {w:"carpet",d:"A thick woven fabric covering for floors"},
+    {w:"castle",d:"A large fortified building from medieval times"},
+    {w:"center",d:"The point that is equally distant from all edges"},
+    {w:"change",d:"To make or become different from what it was"},
+    {w:"circle",d:"A perfectly round shape where every point is equidistant from the center"},
+    {w:"clever",d:"Quick to understand and learn; intelligent"},
+    {w:"coffee",d:"A hot drink made from ground roasted coffee beans"},
+    {w:"corner",d:"The point where two lines, edges, or surfaces meet"},
+    {w:"cotton",d:"A soft white fiber from cotton plants used to make cloth"},
+    {w:"create",d:"To bring something new into existence"},
+    {w:"desert",d:"A dry, barren land that receives very little rain"},
+    {w:"divide",d:"To separate something into parts or groups"},
+    {w:"dinner",d:"The main meal of the day, typically eaten in the evening"},
+    {w:"dollar",d:"The basic unit of currency used in the United States"},
+    {w:"dragon",d:"A mythical fire-breathing creature with wings and claws"},
+    {w:"drawer",d:"A sliding compartment built into a piece of furniture"},
+    {w:"dream",d:"A series of images experienced during sleep; a cherished hope"},
+    {w:"driver",d:"A person who operates a motor vehicle"},
+    {w:"effect",d:"A change or result caused by an action or event"},
+    {w:"effort",d:"Physical or mental energy used to achieve something"},
+    {w:"energy",d:"The power available to do work or be active"},
+    {w:"enough",d:"As much or as many as required; sufficient"},
+    {w:"entire",d:"Including every part; whole and complete"},
+    {w:"equal",d:"The same in value, amount, or degree as another"},
+    {w:"event",d:"Something that happens, especially something important"},
+    {w:"except",d:"Not including; other than"},
+    {w:"expect",d:"To think or believe something is likely to happen"},
+    {w:"fabric",d:"Cloth made by weaving or knitting fibers together"},
+    {w:"fallen",d:"Having dropped down from a higher position"},
+    {w:"family",d:"A group of people related to each other by birth or marriage"},
+    {w:"famous",d:"Known by many people; widely recognized"},
+    {w:"finger",d:"One of the four long, slender digits of the hand"},
+    {w:"finish",d:"To bring something to an end; to complete"},
+    {w:"follow",d:"To go behind or after someone or something"},
+    {w:"forest",d:"A large area of land densely covered with trees"},
+    {w:"frozen",d:"Turned into ice or made solid by extreme cold"},
+    {w:"future",d:"The time period that has not yet occurred"},
+    {w:"gentle",d:"Mild, kind, and not rough or violent"},
+    {w:"golden",d:"Made of or resembling gold in color"},
+    {w:"ground",d:"The solid surface of the Earth"},
+    {w:"growth",d:"The process of increasing in size, number, or importance"},
+    {w:"handle",d:"A part designed to be held when using or carrying something"},
+    {w:"happen",d:"To take place; to come about"},
+    {w:"health",d:"The state of being physically and mentally well"},
+    {w:"hidden",d:"Kept out of sight; not visible or known"},
+    {w:"honest",d:"Telling the truth and not cheating or stealing"},
+    {w:"hunger",d:"The feeling of needing or wanting food"},
+    {w:"insect",d:"A small creature with six legs and three body parts"},
+    {w:"island",d:"A piece of land completely surrounded by water"},
+    {w:"joyful",d:"Very happy and full of joy"},
+    {w:"jungle",d:"A dense tropical forest with tangled vegetation"},
+    {w:"ladder",d:"A structure of rungs set between two poles used to climb"},
+    {w:"lesson",d:"A period of learning or instruction on a subject"},
+    {w:"letter",d:"A written message, or a symbol representing a speech sound"},
+    {w:"lively",d:"Full of life, energy, and enthusiasm"},
+    {w:"lovely",d:"Beautiful and pleasant; delightful"},
+    {w:"market",d:"A place where goods are regularly bought and sold"},
+    {w:"memory",d:"The ability to remember things; a thing remembered"},
+    {w:"mirror",d:"A reflective glass surface that shows your image"},
+    {w:"moment",d:"A very brief period of time"},
+    {w:"monkey",d:"A small or medium-sized primate that typically lives in trees"},
+    {w:"mother",d:"A female parent of a child"},
+    {w:"museum",d:"A building where collections of artifacts are displayed"},
+    {w:"nature",d:"The physical world including plants, animals, and landscapes"},
+    {w:"nearly",d:"Almost but not quite; very close to"},
+    {w:"notice",d:"To become aware of something; to observe"},
+    {w:"number",d:"A mathematical value used to count or measure"},
+    {w:"orange",d:"A round citrus fruit with a bright orange skin"},
+    {w:"others",d:"People or things apart from the ones already mentioned"},
+    {w:"palace",d:"An official residence of a king, queen, or president"},
+    {w:"parent",d:"A person's father or mother"},
+    {w:"person",d:"A human being"},
+    {w:"picnic",d:"An outdoor meal eaten in a park or pleasant setting"},
+    {w:"planet",d:"A celestial body that orbits a star"},
+    {w:"pocket",d:"A small pouch sewn into clothing for carrying small items"},
+    {w:"police",d:"A government organization that enforces laws and maintains order"},
+    {w:"rabbit",d:"A small mammal with long ears and a fluffy tail"},
+    {w:"recipe",d:"A set of instructions for preparing food"},
+    {w:"rescue",d:"To save someone from danger or harm"},
+    {w:"return",d:"To come or go back to a place"},
+    {w:"rocket",d:"A vehicle propelled by expelling gases, used for space travel"},
+    {w:"school",d:"A place where children go to receive education"},
+    {w:"silver",d:"A shiny white precious metal, lighter in color than gold"},
+    {w:"sister",d:"A girl or woman with the same parents as another"},
+    {w:"sunset",d:"The time in the evening when the sun goes below the horizon"},
+    {w:"ticket",d:"A printed piece of paper giving the right to travel or enter"},
+    {w:"turtle",d:"A reptile with a hard protective shell on its back"},
+    {w:"winner",d:"A person or team that comes first in a competition"}
+  ],
+  hard: [
+    {w:"believe",d:"To accept something as true without proof"},
+    {w:"achieve",d:"To successfully accomplish a goal through effort"},
+    {w:"ancient",d:"Very old; belonging to a distant period of history"},
+    {w:"balance",d:"A state where opposite things are equal; the ability to stay upright"},
+    {w:"capable",d:"Having the ability or power to do something"},
+    {w:"distant",d:"Far away in space or separated by a long time"},
+    {w:"endless",d:"Having no end; continuing forever"},
+    {w:"failure",d:"A lack of success in doing or achieving something"},
+    {w:"genuine",d:"Truly what something is said to be; authentic"},
+    {w:"improve",d:"To make or become better in quality or condition"},
+    {w:"jealous",d:"Feeling resentment toward someone for their advantages"},
+    {w:"kitchen",d:"A room where food is cooked and prepared"},
+    {w:"liberty",d:"Freedom from restriction or control by others"},
+    {w:"miracle",d:"A remarkable event that appears to be impossible or supernatural"},
+    {w:"mystery",d:"Something that is difficult or impossible to understand"},
+    {w:"nothing",d:"Not anything; no single thing at all"},
+    {w:"obvious",d:"Easily seen, understood, or recognized"},
+    {w:"opinion",d:"A personal view, judgment, or belief about something"},
+    {w:"package",d:"An object wrapped or boxed for storage or shipping"},
+    {w:"perfect",d:"Having no flaws, defects, or shortcomings"},
+    {w:"popular",d:"Liked or admired by many people"},
+    {w:"problem",d:"A situation that is difficult and needs to be resolved"},
+    {w:"promise",d:"An assurance that you will definitely do something"},
+    {w:"provide",d:"To give or supply something needed or wanted"},
+    {w:"purpose",d:"The reason something exists or for which it is done"},
+    {w:"quality",d:"The standard or degree of excellence of something"},
+    {w:"quickly",d:"At a fast speed; with little delay"},
+    {w:"realize",d:"To become aware of or understand something"},
+    {w:"receive",d:"To be given or presented with something"},
+    {w:"replace",d:"To take the place of something; to put something new in place of another"},
+    {w:"respect",d:"High regard and esteem for someone based on their qualities"},
+    {w:"require",d:"To need something for a particular purpose"},
+    {w:"results",d:"The outcome or consequence of an action or situation"},
+    {w:"silence",d:"Complete absence of sound; total quiet"},
+    {w:"similar",d:"Almost the same but not identical"},
+    {w:"someone",d:"An unknown or unspecified person"},
+    {w:"special",d:"Better or different from what is usual or ordinary"},
+    {w:"strange",d:"Unusual or surprising in a way that is hard to explain"},
+    {w:"success",d:"The achievement of a goal or desired aim"},
+    {w:"suggest",d:"To put forward an idea for consideration"},
+    {w:"support",d:"To give assistance, encouragement, or backing to someone"},
+    {w:"surface",d:"The outside layer or top part of something"},
+    {w:"trouble",d:"Difficulty, problems, or distressing situations"},
+    {w:"usually",d:"Most of the time; under normal circumstances"},
+    {w:"various",d:"Of different kinds; several and diverse"},
+    {w:"village",d:"A small settlement smaller than a town"},
+    {w:"violent",d:"Using physical force intended to cause harm or damage"},
+    {w:"visible",d:"Able to be seen by the human eye"},
+    {w:"welcome",d:"To greet someone warmly; indicating gladness at their arrival"},
+    {w:"whether",d:"Used to introduce two alternatives or to express a doubt"},
+    {w:"without",d:"Not having, using, or doing something"},
+    {w:"witness",d:"A person who sees an event happen"},
+    {w:"wonder",d:"A feeling of amazement and admiration at something remarkable"},
+    {w:"written",d:"Recorded in the form of letters or symbols on a surface"},
+    {w:"absence",d:"The state of being away from somewhere or someone"},
+    {w:"account",d:"A record of financial transactions; a story or description"},
+    {w:"address",d:"The location of a building; to speak to someone formally"},
+    {w:"advance",d:"To move forward or make progress toward a goal"},
+    {w:"against",d:"In opposition to; in contact with something as resistance"},
+    {w:"airport",d:"A place with facilities for aircraft to land and take off"},
+    {w:"already",d:"Before now; by this or a specified time"},
+    {w:"amazing",d:"Causing great wonder or astonishment; very impressive"},
+    {w:"anxiety",d:"A feeling of worry, nervousness, or unease"},
+    {w:"arrange",d:"To put things in a neat, attractive, or appropriate order"},
+    {w:"attract",d:"To cause someone to be interested in or drawn toward something"},
+    {w:"average",d:"A typical or ordinary amount, rate, or level"},
+    {w:"awkward",d:"Lacking ease or grace; causing difficulty or embarrassment"},
+    {w:"bargain",d:"An agreement in which both parties benefit; good value"},
+    {w:"bedroom",d:"A room used for sleeping in a house or apartment"},
+    {w:"between",d:"In the space separating two or more things"},
+    {w:"blanket",d:"A large piece of soft fabric used to keep warm in bed"},
+    {w:"cabinet",d:"A piece of furniture with shelves and doors for storage"},
+    {w:"careful",d:"Taking precautions to avoid danger or mistakes"},
+    {w:"cartoon",d:"A funny drawing or an animated film or television program"},
+    {w:"ceiling",d:"The upper interior surface of a room"},
+    {w:"century",d:"A period of one hundred years"},
+    {w:"certain",d:"Confident and sure that something is true"},
+    {w:"chapter",d:"A main division of a book; a period in someone's life"},
+    {w:"charity",d:"An organization that provides help to people in need"},
+    {w:"collect",d:"To gather items together for a purpose or as a hobby"},
+    {w:"college",d:"An institution providing higher education"},
+    {w:"comfort",d:"A state of physical ease and freedom from pain"},
+    {w:"contain",d:"To have something within; to hold or keep inside"},
+    {w:"control",d:"To manage, direct, or regulate something"},
+    {w:"correct",d:"Free from error; right and accurate"},
+    {w:"country",d:"A nation with its own government and territory"},
+    {w:"culture",d:"The customs, arts, and achievements of a society"},
+    {w:"curious",d:"Eager to learn or know about something"},
+    {w:"current",d:"Happening or existing at the present time"},
+    {w:"decided",d:"Having made a firm choice or judgment"},
+    {w:"defense",d:"Protection against attack or harm"},
+    {w:"despite",d:"Without being affected by; in spite of"},
+    {w:"diamond",d:"A precious gemstone formed from carbon under pressure"},
+    {w:"digital",d:"Relating to computer technology using numerical data"},
+    {w:"discuss",d:"To talk about a topic in order to exchange ideas"},
+    {w:"dolphin",d:"An intelligent marine mammal known for its playful behavior"},
+    {w:"ancient",d:"Belonging to the very distant past; very old"},
+    {w:"emperor",d:"The ruler of an empire"},
+    {w:"eternal",d:"Lasting forever; without end"},
+    {w:"example",d:"A thing that is representative of its type; a model to follow"},
+    {w:"extreme",d:"Very great or severe; as far as possible from the center"}
+  ],
+  advanced: [
+    {w:"automatically",d:"Working or happening by itself without direct human control"},
+    {w:"ingenious",d:"Cleverly designed or inventive; showing remarkable skill"},
+    {w:"flamboyant",d:"Tending to attract attention through showiness and confidence"},
+    {w:"accumulate",d:"To gradually gather or acquire a large amount of something"},
+    {w:"appreciate",d:"To recognize and enjoy the good qualities of something"},
+    {w:"communicate",d:"To share or exchange information, news, or ideas with others"},
+    {w:"eliminate",d:"To completely remove or get rid of something unwanted"},
+    {w:"guarantee",d:"A formal promise that something will happen or be done"},
+    {w:"hypothetical",d:"Based on a supposed situation; not real but imagined for argument"},
+    {w:"illustrate",d:"To explain or make something clear by using examples or pictures"},
+    {w:"investigate",d:"To carry out a careful and systematic inquiry into something"},
+    {w:"legitimate",d:"Conforming to the law or to established rules and standards"},
+    {w:"magnificent",d:"Impressively beautiful, elaborate, or extravagant"},
+    {w:"manipulate",d:"To handle, control, or influence someone or something skillfully"},
+    {w:"negotiate",d:"To discuss something formally in order to reach an agreement"},
+    {w:"phenomenon",d:"A fact or situation that is observed to exist or happen"},
+    {w:"photograph",d:"A picture made by capturing light through a camera"},
+    {w:"recognize",d:"To identify someone or something that you have encountered before"},
+    {w:"significant",d:"Of great importance or relevance; having meaning or consequence"},
+    {w:"sophisticated",d:"Having a refined, complex, or advanced nature or character"},
+    {w:"substantial",d:"Of considerable importance, size, value, or worth"},
+    {w:"temperature",d:"The degree of heat or cold in the atmosphere or a substance"},
+    {w:"transparent",d:"Allowing light to pass through; easy to see through or understand"},
+    {w:"vocabulary",d:"All the words known and used by a person or in a language"},
+    {w:"abbreviation",d:"A shortened form of a word, phrase, or name"},
+    {w:"accomplish",d:"To achieve or complete something successfully"},
+    {w:"acknowledge",d:"To recognize or admit the truth of something"},
+    {w:"acquisition",d:"The act of obtaining or gaining something"},
+    {w:"adversity",d:"Difficult circumstances; a state of hardship or misfortune"},
+    {w:"affectionate",d:"Showing fondness, tender feelings, and love toward others"},
+    {w:"alternative",d:"One of two or more available possibilities; a different option"},
+    {w:"ambiguous",d:"Open to more than one interpretation; not clear or precise"},
+    {w:"ambitious",d:"Having a strong desire to achieve success or power"},
+    {w:"amendment",d:"A change or addition made to a law, document, or agreement"},
+    {w:"anniversary",d:"The date on which an important event occurred in a previous year"},
+    {w:"approximately",d:"Close to the actual figure but not exactly; roughly"},
+    {w:"association",d:"A connection or relationship between people or things"},
+    {w:"attendance",d:"The fact of being present at a place or event"},
+    {w:"authenticity",d:"The quality of being genuine, real, and trustworthy"},
+    {w:"availability",d:"The state of being obtainable, accessible, or ready for use"},
+    {w:"capability",d:"The power, capacity, or ability to do something"},
+    {w:"catastrophic",d:"Involving or causing sudden great damage or suffering"},
+    {w:"characteristic",d:"A typical quality or feature that identifies something"},
+    {w:"collaboration",d:"Working jointly with others toward a common goal"},
+    {w:"comfortable",d:"Providing physical ease; free from hardship or pain"},
+    {w:"competitive",d:"Relating to competition; having a strong desire to be more successful"},
+    {w:"complicated",d:"Involving many different and confusing aspects; hard to understand"},
+    {w:"concentration",d:"The action of focusing all one's attention on something"},
+    {w:"congratulate",d:"To express pleasure and approval at someone's achievement"},
+    {w:"considerably",d:"By a notably large amount; to a significant extent"},
+    {w:"contemporary",d:"Living or occurring at the same time; belonging to the present"},
+    {w:"continuously",d:"Without interruption; happening constantly over time"},
+    {w:"controversial",d:"Giving rise to or likely to cause disagreement or debate"},
+    {w:"conventional",d:"Based on or following what is generally done or accepted"},
+    {w:"cooperation",d:"Working together toward the same end or purpose"},
+    {w:"corporation",d:"A large company or group of companies authorized as a legal entity"},
+    {w:"counterpart",d:"A person or thing that has the same function in a different context"},
+    {w:"deliberately",d:"Done consciously and intentionally; on purpose"},
+    {w:"demonstration",d:"A show of evidence or a public display to show how something works"},
+    {w:"deteriorate",d:"To become progressively worse in condition or quality"},
+    {w:"determination",d:"Firmness of purpose; resolute effort toward a goal"},
+    {w:"disadvantage",d:"An unfavorable circumstance that reduces the chance of success"},
+    {w:"disappointment",d:"Sadness or displeasure caused by unmet expectations"},
+    {w:"documentation",d:"Written information used as an official record or evidence"},
+    {w:"dramatically",d:"In a very sudden, noticeable, and impressive way"},
+    {w:"embarrassment",d:"A feeling of self-consciousness caused by a foolish act"},
+    {w:"encouragement",d:"Support and confidence given to inspire someone"},
+    {w:"enthusiastic",d:"Having or showing intense and eager enjoyment or interest"},
+    {w:"environment",d:"The surroundings or conditions in which a person or thing lives"},
+    {w:"establishment",d:"The process of founding or setting up something on a firm basis"},
+    {w:"examination",d:"A detailed investigation or a formal test of knowledge"},
+    {w:"exceptional",d:"Unusually good; outstanding compared to others"},
+    {w:"exhaustion",d:"A state of extreme physical or mental tiredness"},
+    {w:"experimental",d:"Based on untested theories or methods; relating to experiments"},
+    {w:"explanation",d:"A statement that makes something understandable"},
+    {w:"extraordinary",d:"Very unusual or remarkable; beyond what is ordinary"},
+    {w:"exaggeration",d:"A statement that represents something as better or worse than it is"},
+    {w:"expectation",d:"A strong belief that something will happen in the future"},
+    {w:"fascination",d:"The power to attract and hold the attention strongly"},
+    {w:"flexibility",d:"The ability to change or be changed to suit new conditions"},
+    {w:"fortunately",d:"By good fortune; it is lucky that"},
+    {w:"foundation",d:"The lowest load-bearing part of a building; the basis of something"},
+    {w:"fulfillment",d:"Satisfaction or happiness from doing something meaningful"},
+    {w:"fundamental",d:"Forming the necessary base or core; of central importance"},
+    {w:"generosity",d:"The quality of being kind and generous; willingness to give"},
+    {w:"gravitational",d:"Relating to the natural force that attracts objects toward each other"},
+    {w:"imagination",d:"The ability to form images and ideas in the mind"},
+    {w:"immediately",d:"At once; without any delay"},
+    {w:"independence",d:"The state of being free from the control of others"},
+    {w:"individually",d:"One by one; separately rather than collectively"},
+    {w:"infrastructure",d:"The basic physical systems of a nation or organization"},
+    {w:"inspiration",d:"The process of being mentally stimulated to do something creative"},
+    {w:"intellectual",d:"Relating to the intellect; having a highly developed mind"},
+    {w:"intervention",d:"The action of becoming involved to improve a situation"},
+    {w:"investigation",d:"A formal inquiry or examination of something systematically"},
+    {w:"involvement",d:"The fact of sharing in an activity or event"},
+    {w:"justification",d:"The action of showing a decision or action to be right"},
+    {w:"kindergarten",d:"A school or class for very young children before first grade"}
+  ],
+  expert: [
+    {w:"abbreviate",d:"To shorten a word, phrase, or text"},
+    {w:"accommodate",d:"To provide lodging or to adjust to suit someone's needs"},
+    {w:"anonymous",d:"Not identified by name; of unknown authorship"},
+    {w:"bureaucracy",d:"A system with complex rules and procedures, often governmental"},
+    {w:"catastrophe",d:"A sudden disaster causing great damage or suffering"},
+    {w:"exaggerate",d:"To represent something as greater or more extreme than it is"},
+    {w:"fluorescent",d:"Emitting bright light by absorbing radiation; vividly colored"},
+    {w:"hallucinate",d:"To experience visions or sounds that are not actually present"},
+    {w:"inauguration",d:"A ceremony marking the beginning of something, like a president's term"},
+    {w:"juxtaposition",d:"The placement of two things side by side for comparison or contrast"},
+    {w:"kaleidoscope",d:"A toy producing changing patterns; a varied, constantly shifting scene"},
+    {w:"malevolent",d:"Having or showing a wish to do evil to others"},
+    {w:"orchestration",d:"The arrangement of a piece of music for an orchestra"},
+    {w:"quintessential",d:"Representing the most perfect or typical example of something"},
+    {w:"rehabilitation",d:"The process of restoring someone to health or normal life"},
+    {w:"sovereignty",d:"Supreme power or authority; self-governing status of a state"},
+    {w:"unambiguous",d:"Not open to more than one interpretation; perfectly clear"},
+    {w:"vulnerability",d:"The quality or state of being exposed to possible harm"},
+    {w:"whimsical",d:"Playfully odd, fanciful, or quaint"},
+    {w:"xenophobia",d:"Fear or hatred of foreigners or people from different cultures"},
+    {w:"acquiesce",d:"To accept something reluctantly but without protest"},
+    {w:"adjudicate",d:"To make a formal judgment or decision about a legal matter"},
+    {w:"alleviate",d:"To make something less severe, serious, or painful"},
+    {w:"ambivalence",d:"Uncertainty or mixed feelings about something"},
+    {w:"ameliorate",d:"To make something bad or unsatisfactory better"},
+    {w:"anachronism",d:"Something that belongs to a different period in time"},
+    {w:"apprehension",d:"Anxiety or fear that something bad will happen"},
+    {w:"ascertain",d:"To find out something for certain; to make sure of a fact"},
+    {w:"assimilation",d:"The process of taking in and fully understanding information"},
+    {w:"benevolent",d:"Kind, generous, and well-meaning toward others"},
+    {w:"bewilderment",d:"A state of utter confusion or perplexity"},
+    {w:"bibliophile",d:"A person who loves and collects books"},
+    {w:"cacophony",d:"A harsh, jarring, discordant mixture of sounds"},
+    {w:"caricature",d:"An exaggerated picture or imitation of a person"},
+    {w:"categorical",d:"Unambiguously explicit and direct; absolute"},
+    {w:"circumspect",d:"Wary and cautious about all circumstances; not taking risks"},
+    {w:"clandestine",d:"Kept secret or done secretively, especially something illicit"},
+    {w:"coexistence",d:"The state of existing together in the same place or time"},
+    {w:"cognizant",d:"Having knowledge or being aware of something"},
+    {w:"colloquial",d:"Used in ordinary or familiar conversation; informal"},
+    {w:"compassionate",d:"Feeling and showing sympathy and concern for the suffering of others"},
+    {w:"comprehensible",d:"Able to be understood; intelligible"},
+    {w:"condescending",d:"Showing a feeling of superiority over others"},
+    {w:"connoisseur",d:"An expert judge with discriminating taste in an area"},
+    {w:"conscientious",d:"Very careful and thorough; wishing to do one's work well"},
+    {w:"contemplation",d:"The action of looking thoughtfully at something for a long time"},
+    {w:"contentious",d:"Causing or likely to cause an argument; controversial"},
+    {w:"contradiction",d:"A combination of statements that are opposed and cannot both be true"},
+    {w:"correlate",d:"To have a mutual relationship or connection with something"},
+    {w:"counterfeit",d:"Made as an exact copy of something valuable with intent to deceive"},
+    {w:"cumbersome",d:"Large or heavy and therefore difficult to carry or use"},
+    {w:"defamation",d:"The action of damaging someone's good reputation with false statements"},
+    {w:"deliberation",d:"Long and careful consideration or discussion"},
+    {w:"denounce",d:"To publicly declare something to be wrong or evil"},
+    {w:"despondent",d:"In very low spirits from loss of hope or courage"},
+    {w:"discrepancy",d:"An illogical or surprising lack of agreement between two things"},
+    {w:"disseminate",d:"To spread something, especially information, widely"},
+    {w:"eloquent",d:"Fluent or persuasive in speaking or writing"},
+    {w:"emancipation",d:"The fact of being set free from legal, social, or political restrictions"},
+    {w:"empirical",d:"Based on observation or experience rather than theory"},
+    {w:"enigmatic",d:"Difficult to interpret or understand; mysterious"},
+    {w:"enumerate",d:"To mention a number of things one by one"},
+    {w:"ephemeral",d:"Lasting for a very short time; transitory"},
+    {w:"equivocate",d:"Use ambiguous language to conceal the truth or avoid commitment"},
+    {w:"eradicate",d:"To destroy completely; to put an end to something"},
+    {w:"exacerbate",d:"To make an already bad or problematic situation worse"},
+    {w:"exonerate",d:"To officially free someone from blame or a criminal charge"},
+    {w:"exploitation",d:"The action of treating someone unfairly in order to benefit"},
+    {w:"extravagant",d:"Lacking restraint in spending money or using resources"},
+    {w:"fabrication",d:"The action of inventing false information; something fabricated"},
+    {w:"fallacious",d:"Based on a mistaken belief or faulty reasoning"},
+    {w:"fervent",d:"Having or displaying a passionate intensity of feeling"},
+    {w:"fortuitous",d:"Happening by a lucky chance; occurring by good fortune"},
+    {w:"fractious",d:"Easily irritated; difficult to control; unruly"},
+    {w:"fraudulent",d:"Obtained, done by, or involving deception; not genuine"},
+    {w:"garrulous",d:"Excessively talkative, especially on trivial matters"},
+    {w:"grandiose",d:"Impressive and imposing in appearance; overly ambitious"},
+    {w:"gregarious",d:"Fond of company; sociable; living in groups"},
+    {w:"idiosyncratic",d:"Relating to peculiarities of an individual; distinctive"},
+    {w:"impeccable",d:"In accordance with the highest standards; faultless"},
+    {w:"inadvertent",d:"Not resulting from deliberate planning; accidental"},
+    {w:"incorrigible",d:"Not able to be corrected, improved, or reformed"},
+    {w:"indignation",d:"Anger or annoyance provoked by unfair treatment"},
+    {w:"inefficiency",d:"Failure to make the best use of time or resources"},
+    {w:"inevitable",d:"Certain to happen; unable to be avoided or prevented"},
+    {w:"infallible",d:"Incapable of making mistakes; never wrong"},
+    {w:"inquisitive",d:"Having or showing an interest in learning things; curious"},
+    {w:"insufferable",d:"Too extreme to bear; unbearably arrogant or conceited"},
+    {w:"intrepid",d:"Fearless; adventurous; brave in the face of difficulty"},
+    {w:"irrelevant",d:"Not connected with or relevant to something"},
+    {w:"judicious",d:"Having or showing good judgment; sensible and wise"},
+    {w:"jurisdiction",d:"The official power to make legal decisions and judgments"},
+    {w:"loquacious",d:"Tending to talk a great deal; talkative"},
+    {w:"magnanimous",d:"Very generous or forgiving, especially toward a rival"},
+    {w:"meticulous",d:"Showing great attention to detail; very careful and precise"},
+    {w:"nonchalant",d:"Feeling or appearing casually calm and relaxed"},
+    {w:"oblivious",d:"Not aware of or concerned about what is happening around one"},
+    {w:"obsolete",d:"No longer produced or used; out of date"},
+    {w:"onomatopoeia",d:"The formation of words that imitate the sound they describe"}
+  ],
+  genius: [
+    {w:"acquaintance",d:"A person one knows slightly but who is not a close friend"},
+    {w:"soliloquy",d:"An act of speaking one's thoughts aloud to oneself"},
+    {w:"surreptitious",d:"Kept secret, especially because it would be disapproved of"},
+    {w:"ubiquitous",d:"Present, appearing, or found everywhere simultaneously"},
+    {w:"abominable",d:"Causing moral revulsion; absolutely terrible"},
+    {w:"abstemious",d:"Indulging only moderately in food or drink; restrained"},
+    {w:"acrimonious",d:"Angry and bitter, especially in speech or manner"},
+    {w:"adamantine",d:"Unbreakable; impenetrably or unyieldingly hard"},
+    {w:"adumbrate",d:"To outline or indicate in a sketchy or general way"},
+    {w:"adventitious",d:"Happening by chance rather than design; not innate"},
+    {w:"aggrandizement",d:"The action of increasing power, status, or wealth of oneself"},
+    {w:"allegory",d:"A story or poem that can be interpreted to reveal a hidden meaning"},
+    {w:"antediluvian",d:"Extremely old-fashioned; from before the biblical flood"},
+    {w:"anthropomorphic",d:"Attributing human characteristics or behavior to non-human things"},
+    {w:"apocryphal",d:"Of doubtful authenticity; widely circulated but probably not true"},
+    {w:"apotheosis",d:"The highest point in the development of something; deification"},
+    {w:"approbation",d:"Approval or praise; official recognition"},
+    {w:"arcane",d:"Understood by few; mysterious or secret in nature"},
+    {w:"assiduous",d:"Showing great care, effort, and attention; diligent"},
+    {w:"auspicious",d:"Giving or suggesting a favorable omen; conducive to success"},
+    {w:"avarice",d:"Extreme greed for wealth or material gain; covetousness"},
+    {w:"bellicose",d:"Demonstrating aggression and willingness to fight"},
+    {w:"blandishment",d:"Coaxing or flattery intended to persuade someone gently"},
+    {w:"bombastic",d:"High-sounding language with little substance or meaning"},
+    {w:"bucolic",d:"Relating to the pleasant aspects of the countryside; pastoral"},
+    {w:"byzantine",d:"Excessively complicated; characterized by intrigue"},
+    {w:"callous",d:"Showing an insensitive and cruel disregard for others"},
+    {w:"captious",d:"Given to making petty objections; faultfinding"},
+    {w:"caveat",d:"A warning or proviso about something's possible limitations"},
+    {w:"cerebral",d:"Intellectual rather than emotional; relating to the brain"},
+    {w:"chicanery",d:"The use of trickery or deception to achieve a purpose"},
+    {w:"circumlocution",d:"The use of many words where fewer would do; evasive talk"},
+    {w:"clemency",d:"Mercy and leniency shown toward offenders or enemies"},
+    {w:"coalesce",d:"Come together to form one mass or whole; unite"},
+    {w:"cogitate",d:"Think deeply about something; meditate or ponder"},
+    {w:"commensurate",d:"Corresponding in size or degree; proportionate"},
+    {w:"compunction",d:"A feeling of guilt or moral scruple about something"},
+    {w:"concatenation",d:"A series of interconnected things or events; chain"},
+    {w:"conflagration",d:"An extensive and destructive fire"},
+    {w:"consternation",d:"Feelings of anxiety or dismay caused by unexpected events"},
+    {w:"contrite",d:"Feeling or expressing remorse at the recognition of past wrongdoing"},
+    {w:"conundrum",d:"A confusing and difficult problem or question; a riddle"},
+    {w:"copious",d:"Abundant in supply or quantity; plentiful"},
+    {w:"countermand",d:"To revoke or cancel an order that has already been given"},
+    {w:"credulous",d:"Having too great a readiness to believe things without proof"},
+    {w:"culpable",d:"Deserving blame for a fault or wrong; responsible"},
+    {w:"deference",d:"Humble submission and respect toward a superior"},
+    {w:"demagogue",d:"A political leader who seeks support by appealing to popular prejudices"},
+    {w:"denouement",d:"The final outcome of the main dramatic complication in a narrative"},
+    {w:"desecration",d:"The act of treating a sacred place or thing with violent disrespect"},
+    {w:"diatribe",d:"A forceful and bitter verbal attack against someone or something"},
+    {w:"dilapidated",d:"In a state of disrepair due to age and neglect"},
+    {w:"diminutive",d:"Extremely small; denoting a word expressing smallness"},
+    {w:"dissonance",d:"Lack of harmony among musical notes; tension or disagreement"},
+    {w:"dolorous",d:"Feeling or expressing great sorrow or distress"},
+    {w:"effrontery",d:"Insolent or impertinent behavior; shameless boldness"},
+    {w:"egregious",d:"Outstandingly bad; shockingly terrible"},
+    {w:"elegy",d:"A mournful poem, typically lamenting the dead"},
+    {w:"embroil",d:"To involve someone deeply in an argument or conflict"},
+    {w:"enervate",d:"To cause someone to feel drained of energy or strength"},
+    {w:"ennui",d:"A feeling of listlessness and dissatisfaction arising from boredom"},
+    {w:"epitome",d:"A person or thing that is a perfect example of a particular quality"},
+    {w:"equanimity",d:"Calmness and composure, especially in difficult situations"},
+    {w:"equivocal",d:"Open to more than one interpretation; ambiguous or uncertain"},
+    {w:"erudite",d:"Having or showing great knowledge or learning; scholarly"},
+    {w:"esoteric",d:"Intended for or understood by only a few people with special knowledge"},
+    {w:"euphemism",d:"A mild or indirect expression used in place of a harsher one"},
+    {w:"excoriate",d:"To censure or criticize severely; to damage the outer layer of skin"},
+    {w:"expiation",d:"The act of making amends or reparation for guilt or wrongdoing"},
+    {w:"expunge",d:"To obliterate or remove completely; erase from a record"},
+    {w:"extirpate",d:"To destroy or remove completely; to root out"},
+    {w:"exultation",d:"A feeling of triumphant elation or great joy"},
+    {w:"fatuous",d:"Silly and pointless; complacently or inanely foolish"},
+    {w:"feckless",d:"Lacking initiative, strength of character, or the drive to succeed"},
+    {w:"felicitous",d:"Well-chosen or apt; giving a feeling of happiness"},
+    {w:"gainsay",d:"To deny or contradict; to speak against or oppose"},
+    {w:"grandiloquent",d:"Using high-sounding or pompous language; bombastic"},
+    {w:"gratuitous",d:"Uncalled for; lacking good reason; given free of charge"},
+    {w:"harangue",d:"A lengthy and aggressive speech; to lecture someone angrily"},
+    {w:"hegemony",d:"Leadership or dominance, especially of one nation over others"},
+    {w:"hubris",d:"Excessive pride or self-confidence; arrogance that causes downfall"},
+    {w:"iconoclast",d:"A person who attacks cherished beliefs or institutions"},
+    {w:"ignominious",d:"Deserving or causing public disgrace or shame"},
+    {w:"imperturbable",d:"Unable to be upset or excited; remaining calm in all circumstances"},
+    {w:"impetuous",d:"Acting without thinking; moving with great force or violence"},
+    {w:"impunity",d:"Exemption from punishment or freedom from injurious consequences"},
+    {w:"incandescent",d:"Emitting light as a result of being heated; filled with passion"},
+    {w:"inchoate",d:"Not fully formed or developed; rudimentary"},
+    {w:"ineffable",d:"Too great or extreme to be expressed in words"},
+    {w:"inimical",d:"Tending to obstruct or harm; hostile"},
+    {w:"insouciant",d:"Showing a casual lack of concern; carefree"},
+    {w:"intransigent",d:"Unwilling to change one's views; uncompromising"},
+    {w:"invective",d:"Insulting, abusive, or highly critical language"},
+    {w:"inveterate",d:"Having a habit or interest that is firmly established; habitual"},
+    {w:"irascible",d:"Having or showing a tendency to be easily angered"},
+    {w:"lachrymose",d:"Tearful or given to weeping; inducing tears"}
+  ],
+  god: [
+    {w:"floccinaucinihilipilification",d:"The act of estimating something as worthless"},
+    {w:"antidisestablishmentarianism",d:"Opposition to the withdrawal of state support from the church"},
+    {w:"pneumonoultramicroscopicsilicovolcanoconiosis",d:"A lung disease caused by inhaling fine silica dust from volcanoes"},
+    {w:"hippopotomonstrosesquippedaliophobia",d:"An ironically named phobia: the fear of long words"},
+    {w:"supercalifragilisticexpialidocious",d:"Extraordinarily good; a nonsense word meaning something wonderful"},
+    {w:"incomprehensibilities",d:"Things that are completely impossible to understand"},
+    {w:"electroencephalography",d:"The recording of electrical activity along the scalp to study the brain"},
+    {w:"psychoneuroimmunology",d:"The study of how the brain and nervous system affect the immune system"},
+    {w:"otorhinolaryngological",d:"Relating to the branch of medicine dealing with ears, nose, and throat"},
+    {w:"magnetohydrodynamics",d:"The study of the magnetic properties and behavior of electrically conducting fluids"},
+    {w:"spectrophotometrically",d:"By means of measuring how much light is absorbed or reflected by a substance"},
+    {w:"thyroparathyroidectomy",d:"A surgical operation to remove both the thyroid and parathyroid glands"},
+    {w:"radioimmunoassay",d:"A laboratory technique using radioactive isotopes to measure substances in the blood"},
+    {w:"esophagogastroduodenoscopy",d:"An endoscopic examination of the upper digestive tract"},
+    {w:"parasympathomimetic",d:"A substance that produces effects similar to those of the parasympathetic nervous system"},
+    {w:"disenfranchisement",d:"The state of being deprived of a right, especially the right to vote"},
+    {w:"transubstantiation",d:"The conversion of the Eucharistic bread and wine into the body and blood of Christ"},
+    {w:"deinstitutionalization",d:"The process of releasing patients from mental institutions into community care"},
+    {w:"counterproductively",d:"In a manner that has the opposite of the desired or intended effect"},
+    {w:"institutionalization",d:"The process of establishing something as a convention in an organization"},
+    {w:"internationalization",d:"The process of designing something to work in multiple languages or countries"},
+    {w:"compartmentalization",d:"The division of something into separate sections or categories"},
+    {w:"quintessentially",d:"In the most perfect, typical, or characteristic manner possible"},
+    {w:"interchangeability",d:"The quality of being able to be exchanged for one another"},
+    {w:"predetermination",d:"The action of establishing or deciding upon something in advance"},
+    {w:"disproportionately",d:"To an extent that is too large or too small in comparison with something"},
+    {w:"phantasmagorical",d:"Relating to a sequence of real or imaginary images like those seen in a dream"},
+    {w:"prestidigitation",d:"The performance of conjuring tricks; legerdemain or sleight of hand"},
+    {w:"psycholinguistics",d:"The study of the psychological and neurobiological factors of language"},
+    {w:"postcolonialism",d:"The historical period after colonialism; an academic field studying its effects"},
+    {w:"neurogastroenterology",d:"The study of the nervous system's interaction with the digestive system"},
+    {w:"xenotransplantation",d:"The transfer of living cells, tissues, or organs from one species to another"},
+    {w:"hypercholesterolemia",d:"A condition characterized by abnormally high levels of cholesterol in the blood"},
+    {w:"immunocompromised",d:"Having an impaired immune system, reducing resistance to infection"},
+    {w:"neuropsychological",d:"Relating to neural and psychological processes and how they interact"},
+    {w:"otorhinolaryngology",d:"The branch of medicine and surgery specializing in ear, nose, and throat"},
+    {w:"ophthalmologically",d:"Relating to the study of the anatomy and diseases of the eye"},
+    {w:"oligodendroglioma",d:"A type of tumor that develops from cells in the brain or spinal cord"},
+    {w:"hyperventilation",d:"Abnormally rapid breathing resulting in reduced carbon dioxide levels"},
+    {w:"immunosuppressive",d:"Preventing or reducing the immune system's normal response"},
+    {w:"intergovernmental",d:"Relating to two or more governments working together"},
+    {w:"microencapsulation",d:"The process of enclosing substances in tiny protective capsules"},
+    {w:"superhydrophobicity",d:"The property of an extreme surface repellency to water"},
+    {w:"transcendentalism",d:"A 19th-century philosophical movement emphasizing spiritual intuition"},
+    {w:"unconscionability",d:"The quality of being unreasonably excessive or morally unacceptable"},
+    {w:"valetudinarianisms",d:"Habits or attitudes characteristic of a person excessively concerned with health"},
+    {w:"reconceptualization",d:"The process of forming a completely new concept of something"},
+    {w:"recontextualization",d:"The act of placing something within a new or different context"},
+    {w:"paleontological",d:"Relating to the scientific study of life existing in past geological periods"},
+    {w:"parliamentarianism",d:"A government system in which supreme power is held by parliament"},
+    {w:"electrocardiographically",d:"By means of recording the electrical activity of the heart"},
+    {w:"pneumatically",d:"Relating to or using compressed air or wind"},
+    {w:"preternatural",d:"Beyond what is normal or natural; extraordinary"},
+    {w:"disestablishmentarian",d:"A person who advocates the separation of church and state"},
+    {w:"gastroenterological",d:"Relating to the branch of medicine dealing with the digestive system"},
+    {w:"lexicographically",d:"In terms of the compiling and editing of dictionaries"},
+    {w:"hematopathological",d:"Relating to the study of diseases of the blood and blood-forming organs"},
+    {w:"photosynthetically",d:"By means of the process by which plants use sunlight to synthesize nutrients"},
+    {w:"endocrinologically",d:"Relating to the study of the endocrine system and hormones"},
+    {w:"misrepresentative",d:"Giving a false or misleading account or impression of something"},
+    {w:"nondiscriminatory",d:"Treating all people equally regardless of race, age, or sex"},
+    {w:"perpendicularity",d:"The state of being at an angle of exactly ninety degrees"},
+    {w:"pronunciamento",d:"A political manifesto or proclamation issued by an authority"},
+    {w:"somnambulistically",d:"In the manner of sleepwalking; in a dreamy, automatic way"},
+    {w:"sesquipedalian",d:"Characterized by the use of long words; a long word itself"},
+    {w:"antinomianism",d:"The rejection of the moral law, believing grace alone is sufficient for salvation"},
+    {w:"circumambulation",d:"The act of walking all the way around something"},
+    {w:"dextroamphetamine",d:"A stimulant drug of the amphetamine class used to treat ADHD"},
+    {w:"eschatological",d:"Relating to death, judgment, and the final destiny of humanity"},
+    {w:"fenestration",d:"The arrangement and design of windows in a building"},
+    {w:"grammaticalization",d:"The process by which a word or phrase becomes a grammatical element"},
+    {w:"hagiographical",d:"Relating to the writing of the lives of saints"},
+    {w:"idiosyncrasy",d:"A distinctive or peculiar feature or characteristic of a person"},
+    {w:"jurisprudence",d:"The theory or philosophy of law; a body of laws"},
+    {w:"kinesthetically",d:"Relating to the sense of movement of muscles and body parts"},
+    {w:"lexicalization",d:"The process by which a new word is added to a language's vocabulary"},
+    {w:"metonymically",d:"By way of a figure of speech where one word substitutes for another related word"},
+    {w:"neuropathological",d:"Relating to the study of diseases of the nervous system"},
+    {w:"obfuscation",d:"The action of making something unclear, unclear, or unintelligible"},
+    {w:"paleoanthropological",d:"Relating to the study of early human fossils and evolution"},
+    {w:"quintessence",d:"The purest and most perfect form of a quality; the most essential part"},
+    {w:"ratiocination",d:"The process of logical and systematic reasoning"},
+    {w:"sanctimoniously",d:"Making a show of being morally superior; self-righteously"},
+    {w:"tergiversation",d:"Making conflicting or evasive statements; desertion of a cause"},
+    {w:"ultramontanism",d:"Advocacy of supreme papal authority over national churches"},
+    {w:"verisimilitude",d:"The appearance of being true or real; believability"},
+    {w:"weltanschauung",d:"A comprehensive world view or philosophy of life"},
+    {w:"xanthophyllous",d:"Relating to yellow pigments found in plants"},
+    {w:"yellowhammer",d:"A bunting that has yellow coloring on its head and underparts"},
+    {w:"zeitgeist",d:"The defining spirit or mood of a particular period in history"},
+    {w:"abecedarian",d:"Relating to the alphabet; a beginner at reading"},
+    {w:"boondoggle",d:"Work or activity that is wasteful or pointlessly time-consuming"},
+    {w:"callipygian",d:"Having well-shaped buttocks"},
+    {w:"dendrochronology",d:"The science of dating events by studying tree rings"},
+    {w:"epiphenomenalism",d:"The theory that mental events are by-products of physical events"},
+    {w:"flibbertigibbet",d:"A frivolous, flighty, or excessively talkative person"},
+    {w:"gobbledygook",d:"Language that is meaningless or difficult to understand; nonsense"},
+    {w:"hippocampus",d:"A major component of the brain involved in memory and spatial navigation"},
+    {w:"iconography",d:"The visual images and symbols associated with a subject"},
+    {w:"Juggernaut",d:"A large, powerful, and overwhelming force or institution"},
+    {w:"Kafkaesque",d:"Relating to or reminiscent of the oppressive nightmarish works of Franz Kafka"},
+    {w:"lollygagging",d:"Spending time aimlessly; idling or dawdling"},
+    {w:"mnemonic",d:"A device such as a pattern or rhyme that aids memory"}
+  ]
+};
+
+// ════════════════════════════════════════════════════════════
+//  LEVEL CONFIG
+// ════════════════════════════════════════════════════════════
+const levels = [
+  { id:"easy",     label:"Easy",     desc:"Simple everyday words for beginners", examples:["cat","run","big"], color:"#1e8c3a", bg:"#e6f4ea", cls:"lv-easy" },
+  { id:"novice",   label:"Novice",   desc:"Common words you use every day", examples:["happy","dance","water"], color:"#2c7a2c", bg:"#edf7ed", cls:"lv-novice" },
+  { id:"normal",   label:"Normal",   desc:"Intermediate vocabulary words", examples:["garden","castle","clever"], color:"#1967d2", bg:"#e8f0fe", cls:"lv-normal" },
+  { id:"hard",     label:"Hard",     desc:"Challenging words requiring care", examples:["genuine","miracle","awkward"], color:"#b46000", bg:"#fef3e2", cls:"lv-hard" },
+  { id:"advanced", label:"Advanced", desc:"High school to college level words", examples:["flamboyant","negotiate","sophisticated"], color:"#c5221f", bg:"#fce8e6", cls:"lv-advanced" },
+  { id:"expert",   label:"Expert",   desc:"Advanced vocabulary of the educated", examples:["clandestine","quintessential","juxtaposition"], color:"#7b2fbe", bg:"#f3e8fd", cls:"lv-expert" },
+  { id:"genius",   label:"Genius",   desc:"Rare and complex vocabulary", examples:["soliloquy","equanimity","esoteric"], color:"#b31412", bg:"#fce8e6", cls:"lv-genius" },
+  { id:"god",      label:"God",      desc:"Extraordinarily long and rare words", examples:["floccinaucinihilipilification","sesquipedalian"], color:"#202124", bg:"#f1f3f4", cls:"lv-god" }
+];
+
+// ════════════════════════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════════════════════════
+let state = {
+  level: null,
+  words: [],
+  idx: 0,
+  score: 0,
+  streak: 0,
+  lives: 5,
+  maxLives: 5,
+  correct: 0,
+  incorrect: 0,
+  wrongWords: [],
+  hintUsed: false,
+  submitting: false,
+  currentWord: null
+};
+
+// ════════════════════════════════════════════════════════════
+//  BUILD DIFFICULTY GRID
+// ════════════════════════════════════════════════════════════
+function buildDifficultyGrid() {
+  const grid = document.getElementById('difficulty-grid');
+  grid.innerHTML = '';
+  levels.forEach(lv => {
+    const card = document.createElement('div');
+    card.className = `d-card ${lv.cls}`;
+    card.style.setProperty('--c', lv.color);
+    card.style.setProperty('--cbg', lv.bg);
+    const chips = lv.examples.map(e => `<span class="d-chip">${e}</span>`).join('');
+    card.innerHTML = `
+      <div class="d-badge">${lv.label}</div>
+      <div class="d-name">${lv.label}</div>
+      <div class="d-desc">${lv.desc}</div>
+      <div class="d-examples">${chips}<span class="d-chip">+ more</span></div>
+    `;
+    card.addEventListener('click', () => startGame(lv.id));
+    grid.appendChild(card);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+//  START GAME
+// ════════════════════════════════════════════════════════════
+function startGame(levelId) {
+  const lv = levels.find(l => l.id === levelId);
+  const words = [...wordDB[levelId]];
+  shuffle(words);
+
+  state = { level: lv, words, idx: 0, score: 0, streak: 0,
+            lives: 5, maxLives: 5, correct: 0, incorrect: 0,
+            wrongWords: [], hintUsed: false, submitting: false, currentWord: null };
+
+  // Apply level color variables to game screen
+  const gs = document.getElementById('game-screen');
+  gs.style.setProperty('--c', lv.color);
+  gs.style.setProperty('--cbg', lv.bg);
+
+  const pill = document.getElementById('g-level-label');
+  pill.textContent = lv.label;
+  pill.style.background = lv.bg;
+  pill.style.color = lv.color;
+
+  showScreen('game-screen');
+  updateLives();
+  loadWord();
+}
+
+// ════════════════════════════════════════════════════════════
+//  LOAD WORD
+// ════════════════════════════════════════════════════════════
+function loadWord() {
+  state.hintUsed = false;
+  state.submitting = false;
+  state.currentWord = state.words[state.idx];
+
+  const word = state.currentWord.w;
+  const def  = state.currentWord.d;
+
+  // Definition
+  document.getElementById('g-def').textContent = def;
+
+  // Blanks
+  renderBlanks(word, '');
+
+  // Input
+  const inp = document.getElementById('spell-input');
+  inp.value = '';
+  inp.className = 'spell-input';
+  inp.placeholder = 'Type your answer…';
+  inp.disabled = false;
+  inp.focus();
+
+  // Answer hint
+  document.getElementById('answer-hint').innerHTML = '';
+
+  // Buttons
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('hint-btn').disabled = false;
+  document.getElementById('hint-btn').textContent = '💡 Hint';
+
+  // Progress
+  updateProgress();
+  updateScore();
+
+  // Auto-speak
+  setTimeout(() => speakWord(), 400);
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER BLANKS
+// ════════════════════════════════════════════════════════════
+function renderBlanks(word, typed, state_class) {
+  const row = document.getElementById('blanks-row');
+  row.innerHTML = '';
+  for (let i = 0; i < word.length; i++) {
+    const span = document.createElement('span');
+    span.className = 'blank-char';
+    if (state_class === 'correct') span.classList.add('correct-char');
+    if (state_class === 'wrong')   span.classList.add('wrong-char');
+    else if (i === typed.length)   span.classList.add('active');
+
+    span.textContent = typed[i] ? typed[i] : '_';
+    row.appendChild(span);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  HANDLE INPUT
+// ════════════════════════════════════════════════════════════
+function handleInput(e) {
+  const word = state.currentWord ? state.currentWord.w : '';
+  const typed = e.target.value.toLowerCase().replace(/\s/g,'');
+  e.target.value = typed;
+  renderBlanks(word, typed, '');
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter') submitAnswer();
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUBMIT
+// ════════════════════════════════════════════════════════════
+function submitAnswer() {
+  if (state.submitting || !state.currentWord) return;
+  const inp = document.getElementById('spell-input');
+  const typed = inp.value.trim().toLowerCase();
+  if (!typed) { showToast('Type a word first!', 't-info'); return; }
+
+  state.submitting = true;
+  const word = state.currentWord.w.toLowerCase();
+  const correct = typed === word;
+
+  if (correct) {
+    // Correct!
+    state.correct++;
+    let pts = 10;
+    state.streak++;
+    if (state.streak >= 3) pts += 5;
+    state.score += pts;
+    inp.classList.add('inp-correct');
+    renderBlanks(word, typed, 'correct');
+    const msg = state.streak >= 5 ? `🔥 ${state.streak} streak! +${pts}` :
+                state.streak >= 3 ? `⚡ Streak! +${pts}` : `✓ Correct! +${pts}`;
+    showToast(msg, 't-correct');
+    updateScore();
+    setTimeout(() => nextWord(), 1400);
+  } else {
+    // Wrong
+    state.incorrect++;
+    state.streak = 0;
+    state.lives = Math.max(0, state.lives - 1);
+    inp.classList.add('inp-wrong');
+    renderBlanks(word, typed, 'wrong');
+    state.wrongWords.push({ word, typed });
+    document.getElementById('answer-hint').innerHTML =
+      `The correct spelling was: <span>${word}</span>`;
+    showToast('✗ Wrong answer', 't-wrong');
+    updateLives();
+    updateScore();
+
+    if (state.lives === 0) {
+      setTimeout(() => endGame(), 1500);
+    } else {
+      setTimeout(() => nextWord(), 2000);
+    }
+  }
+}
+
+function nextWord() {
+  state.idx++;
+  if (state.idx >= state.words.length) {
+    endGame();
+  } else {
+    loadWord();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SPEAK
+// ════════════════════════════════════════════════════════════
+let speaking = false;
+function speakWord() {
+  if (!state.currentWord) return;
+  if (!window.speechSynthesis) {
+    showToast('Speech not supported in this browser', 't-info');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  speaking = true;
+  const btn = document.getElementById('speak-btn');
+  btn.classList.add('speaking');
+  btn.disabled = true;
+
+  const fullText = `Spell the word: ${state.currentWord.w}`;
+  const utt = new SpeechSynthesisUtterance(fullText);
+  utt.rate = 0.85;
+  utt.pitch = 1.0;
+  utt.volume = 1.0;
+
+  // Try to find a natural English voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.lang.startsWith('en') && v.localService) ||
+                    voices.find(v => v.lang.startsWith('en')) || null;
+  if (preferred) utt.voice = preferred;
+
+  utt.onend = () => {
+    speaking = false;
+    btn.classList.remove('speaking');
+    btn.disabled = false;
+    // Speak just the word again slowly
+    const w2 = new SpeechSynthesisUtterance(state.currentWord.w);
+    w2.rate = 0.65;
+    if (preferred) w2.voice = preferred;
+    window.speechSynthesis.speak(w2);
+  };
+
+  window.speechSynthesis.speak(utt);
+}
+
+// ════════════════════════════════════════════════════════════
+//  HINT
+// ════════════════════════════════════════════════════════════
+function useHint() {
+  if (!state.currentWord || state.hintUsed) return;
+  state.hintUsed = true;
+  const inp = document.getElementById('spell-input');
+  inp.value = state.currentWord.w[0];
+  renderBlanks(state.currentWord.w, state.currentWord.w[0], '');
+  inp.focus();
+  document.getElementById('hint-btn').disabled = true;
+  document.getElementById('hint-btn').textContent = `💡 "${state.currentWord.w[0]}…"`;
+  showToast(`First letter: "${state.currentWord.w[0].toUpperCase()}"`, 't-info');
+}
+
+// ════════════════════════════════════════════════════════════
+//  UPDATE UI
+// ════════════════════════════════════════════════════════════
+function updateScore() {
+  document.getElementById('g-score').textContent = state.score;
+  document.getElementById('g-streak').textContent = state.streak;
+}
+
+function updateLives() {
+  const row = document.getElementById('g-lives');
+  row.innerHTML = '';
+  for (let i = 0; i < state.maxLives; i++) {
+    const h = document.createElement('span');
+    h.className = 'hrt' + (i >= state.lives ? ' lost' : '');
+    h.textContent = '♥';
+    row.appendChild(h);
+  }
+}
+
+function updateProgress() {
+  const total = state.words.length;
+  const done  = state.idx;
+  const pct   = Math.round((done / total) * 100);
+  document.getElementById('prog-label').textContent = `Word ${done + 1} / ${total}`;
+  document.getElementById('prog-pct').textContent   = `${pct}%`;
+  document.getElementById('prog-fill').style.width  = `${pct}%`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, cls) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${cls} show`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2000);
+}
+
+// ════════════════════════════════════════════════════════════
+//  QUIT / END GAME
+// ════════════════════════════════════════════════════════════
+function quitGame() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  endGame();
+}
+
+function endGame() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  const total    = state.idx + (state.lives === 0 && state.submitting ? 0 : 0);
+  const attempted = state.correct + state.incorrect;
+  const accuracy = attempted > 0 ? Math.round((state.correct / attempted) * 100) : 0;
+
+  // Icon & title
+  let icon, title, sub;
+  if (accuracy === 100 && attempted >= 10) { icon='🏆'; title='Perfect Score!'; sub='You spelled every word correctly!'; }
+  else if (accuracy >= 90) { icon='🌟'; title='Outstanding!'; sub='Brilliant spelling performance!'; }
+  else if (accuracy >= 75) { icon='🎉'; title='Great Job!'; sub='You did really well on this level!'; }
+  else if (accuracy >= 50) { icon='👍'; title='Good Effort!'; sub='Keep practicing to improve your score!'; }
+  else { icon='📚'; title='Keep Practicing!'; sub='Every mistake is a chance to learn!'; }
+
+  document.getElementById('res-icon').textContent = icon;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent = sub;
+  document.getElementById('r-score').textContent = state.score;
+  document.getElementById('r-correct').textContent = `${state.correct}/${attempted}`;
+  document.getElementById('r-accuracy').textContent = `${accuracy}%`;
+
+  // Wrong words
+  const ws = document.getElementById('wrong-section');
+  if (state.wrongWords.length > 0) {
+    const items = state.wrongWords.map(w =>
+      `<div class="wrong-item">
+        <span class="wrong-word">${w.word}</span>
+        <span class="wrong-your">You typed: ${w.typed || '–'}</span>
+       </div>`
+    ).join('');
+    ws.innerHTML = `<div class="wrong-title">Words to practice (${state.wrongWords.length})</div>${items}`;
+  } else {
+    ws.innerHTML = '<div class="wrong-title" style="color:#1e8c3a;letter-spacing:1px">No mistakes! Perfect! 🎊</div>';
+  }
+
+  showScreen('result-screen');
+}
+
+function playAgain() {
+  if (state.level) startGame(state.level.id);
+}
+
+function backToMenu() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  showScreen('difficulty-screen');
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Load voices on page load (some browsers need this)
+window.speechSynthesis && window.speechSynthesis.getVoices();
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+// Init
+buildDifficultyGrid();
+</script>
+</body>
+</html>
