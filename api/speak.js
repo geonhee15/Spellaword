@@ -1,7 +1,7 @@
 const VOICE_ID = 'gUABw7pXQjhjt0kNFBTF';
 const MODEL_ID  = 'eleven_turbo_v2_5';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS for local dev
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
