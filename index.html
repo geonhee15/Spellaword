@@ -618,6 +618,51 @@
     }
     .btn-back:hover { background: #ebebeb; }
 
+    /* Voice picker */
+    .voice-picker-wrap { position: relative; }
+    .voice-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      padding: 8px;
+      z-index: 200;
+      min-width: 240px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .voice-dropdown.open { display: block; }
+    .voice-opt {
+      padding: 9px 14px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #444;
+      cursor: pointer;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .voice-opt:hover { background: #f5f5f7; }
+    .voice-opt.selected { background: #eef2ff; color: #667eea; font-weight: 700; }
+    .voice-opt .vq-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: #f0f0f0;
+      color: #888;
+      letter-spacing: .5px;
+    }
+    .voice-opt .vq-badge.hd { background: #eef2ff; color: #667eea; }
+
     /* Responsive */
     @media (max-width: 640px) {
       .g-header { padding: 14px 18px; }
@@ -702,6 +747,13 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         Hint
       </button>
+      <div class="voice-picker-wrap">
+        <button class="hint-btn" onclick="toggleVoicePicker()" id="voice-picker-btn" title="Change voice">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          Voice
+        </button>
+        <div class="voice-dropdown" id="voice-dropdown"></div>
+      </div>
     </div>
 
     <!-- Input -->
@@ -1794,6 +1846,110 @@ function nextWord() {
 }
 
 // ════════════════════════════════════════════════════════════
+//  VOICE SELECTION
+// ════════════════════════════════════════════════════════════
+let allVoices = [];
+let selectedVoice = null;
+
+// Priority order: Enhanced/Premium neural voices first
+const VOICE_PRIORITY = [
+  // Mac high-quality enhanced voices
+  'Samantha (Enhanced)', 'Samantha', 'Karen (Enhanced)', 'Karen',
+  'Daniel (Enhanced)', 'Daniel', 'Moira (Enhanced)', 'Moira',
+  'Tessa (Enhanced)', 'Alex',
+  // Google neural voices (Chrome)
+  'Google US English', 'Google UK English Female', 'Google UK English Male',
+  // Microsoft neural voices (Edge)
+  'Microsoft Aria Online (Natural)', 'Microsoft Jenny Online (Natural)',
+  'Microsoft Guy Online (Natural)', 'Microsoft Aria',
+  // Generic fallbacks
+  'en-US', 'en-GB', 'en-AU'
+];
+
+function scoreVoice(v) {
+  const n = v.name;
+  const l = v.lang;
+  // Exact name match in priority list
+  for (let i = 0; i < VOICE_PRIORITY.length; i++) {
+    if (n === VOICE_PRIORITY[i]) return 1000 - i;
+  }
+  // Contains "Enhanced" or "Premium" (Mac neural)
+  if (/(enhanced|premium)/i.test(n) && l.startsWith('en')) return 800;
+  // Google voices
+  if (/google/i.test(n) && l.startsWith('en')) return 700;
+  // Microsoft Online Natural
+  if (/microsoft.*online.*natural/i.test(n)) return 680;
+  // Any Microsoft voice
+  if (/microsoft/i.test(n) && l.startsWith('en')) return 500;
+  // Local en-US
+  if (l === 'en-US' && v.localService) return 400;
+  if (l === 'en-GB' && v.localService) return 380;
+  if (l.startsWith('en') && v.localService) return 300;
+  if (l.startsWith('en')) return 200;
+  return 0;
+}
+
+function loadVoices() {
+  const raw = window.speechSynthesis.getVoices();
+  allVoices = raw
+    .filter(v => v.lang.startsWith('en'))
+    .map(v => ({ voice: v, score: scoreVoice(v) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(x => x.voice);
+
+  if (allVoices.length === 0) allVoices = raw.filter(v => v.lang.startsWith('en'));
+
+  // Restore saved voice or pick best
+  const saved = localStorage.getItem('spellaword_voice');
+  selectedVoice = allVoices.find(v => v.name === saved) || allVoices[0] || null;
+
+  buildVoiceDropdown();
+}
+
+function buildVoiceDropdown() {
+  const dd = document.getElementById('voice-dropdown');
+  if (!dd) return;
+  dd.innerHTML = '';
+  allVoices.slice(0, 20).forEach(v => {
+    const div = document.createElement('div');
+    div.className = 'voice-opt' + (selectedVoice && v.name === selectedVoice.name ? ' selected' : '');
+    const isHD = /(enhanced|premium|online|google)/i.test(v.name);
+    div.innerHTML = `
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${v.name}</span>
+      <span class="vq-badge ${isHD ? 'hd' : ''}">${isHD ? 'HD' : v.lang}</span>
+    `;
+    div.onclick = () => {
+      selectedVoice = v;
+      localStorage.setItem('spellaword_voice', v.name);
+      buildVoiceDropdown();
+      toggleVoicePicker(false);
+      // Preview the selected voice
+      const p = new SpeechSynthesisUtterance('Voice selected');
+      p.voice = v; p.rate = 0.9; p.volume = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(p);
+    };
+    dd.appendChild(div);
+  });
+}
+
+function toggleVoicePicker(force) {
+  const dd = document.getElementById('voice-dropdown');
+  const open = typeof force === 'boolean' ? force : !dd.classList.contains('open');
+  dd.classList.toggle('open', open);
+  if (open) {
+    // close on outside click
+    setTimeout(() => document.addEventListener('click', function h(e) {
+      if (!dd.contains(e.target) && e.target.id !== 'voice-picker-btn') {
+        dd.classList.remove('open');
+        document.removeEventListener('click', h);
+      }
+    }), 10);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
 //  SPEAK
 // ════════════════════════════════════════════════════════════
 let speaking = false;
@@ -1809,30 +1965,37 @@ function speakWord() {
   btn.classList.add('speaking');
   btn.disabled = true;
 
-  const fullText = `Spell the word: ${state.currentWord.w}`;
-  const utt = new SpeechSynthesisUtterance(fullText);
-  utt.rate = 0.85;
-  utt.pitch = 1.0;
-  utt.volume = 1.0;
+  const word = state.currentWord.w;
+  const voice = selectedVoice;
 
-  // Try to find a natural English voice
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find(v => v.lang.startsWith('en') && v.localService) ||
-                    voices.find(v => v.lang.startsWith('en')) || null;
-  if (preferred) utt.voice = preferred;
+  function makeUtt(text, rate, pitch) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = rate; u.pitch = pitch; u.volume = 1.0;
+    if (voice) u.voice = voice;
+    return u;
+  }
 
-  utt.onend = () => {
+  // Step 1: "Spell the word:"
+  const u1 = makeUtt('Spell the word:', 0.88, 1.0);
+  // Step 2: word at normal pace
+  const u2 = makeUtt(word, 0.78, 1.0);
+  // Step 3: word slowly and clearly
+  const u3 = makeUtt(word, 0.52, 0.98);
+
+  u3.onend = () => {
     speaking = false;
     btn.classList.remove('speaking');
     btn.disabled = false;
-    // Speak just the word again slowly
-    const w2 = new SpeechSynthesisUtterance(state.currentWord.w);
-    w2.rate = 0.65;
-    if (preferred) w2.voice = preferred;
-    window.speechSynthesis.speak(w2);
+  };
+  u1.onerror = u2.onerror = u3.onerror = () => {
+    speaking = false;
+    btn.classList.remove('speaking');
+    btn.disabled = false;
   };
 
-  window.speechSynthesis.speak(utt);
+  window.speechSynthesis.speak(u1);
+  window.speechSynthesis.speak(u2);
+  window.speechSynthesis.speak(u3);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1956,10 +2119,10 @@ function shuffle(arr) {
   return arr;
 }
 
-// Load voices on page load (some browsers need this)
-window.speechSynthesis && window.speechSynthesis.getVoices();
+// Load voices
 if (window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices(); // try immediately (works in Firefox/Safari)
 }
 
 // Init
