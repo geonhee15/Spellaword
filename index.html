@@ -1889,16 +1889,33 @@ function scoreVoice(v) {
   return 0;
 }
 
+// Korean/Japanese/Chinese/non-native-English voice names to exclude
+const EXCLUDE_VOICES = [
+  'Yuna','Nara','Jinho','Hyunjun','Meijia','Tingting','Sinji','Lekha',
+  'Kyoko','Otoya','O-ren','Siri Korea','Damayanti','Kanya','Tülay',
+  'Ioana','Joana','Monica','Montse','Jorge','Paulina','Juan','Soledad',
+  'Luciana','Fernanda','Felipe','Marisol','Diego','Mónica','Alejandro',
+];
+const EXCLUDE_LANG = ['ko','ja','zh','ar','hi','th','vi','tr','id','ms','el','he'];
+
 function loadVoices() {
   const raw = window.speechSynthesis.getVoices();
   allVoices = raw
-    .filter(v => v.lang.startsWith('en'))
+    .filter(v => {
+      // Must be English language code
+      if (!v.lang.startsWith('en')) return false;
+      // Exclude known non-native-English voices by name
+      if (EXCLUDE_VOICES.some(ex => v.name.includes(ex))) return false;
+      // Exclude if the voice name contains Korean/Japanese/Chinese characters
+      if (/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(v.name)) return false;
+      return true;
+    })
     .map(v => ({ voice: v, score: scoreVoice(v) }))
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .map(x => x.voice);
 
-  if (allVoices.length === 0) allVoices = raw.filter(v => v.lang.startsWith('en'));
+  if (allVoices.length === 0) allVoices = raw.filter(v => v.lang.startsWith('en') && !EXCLUDE_VOICES.some(ex => v.name.includes(ex)));
 
   // Restore saved voice or pick best
   const saved = localStorage.getItem('spellaword_voice');
