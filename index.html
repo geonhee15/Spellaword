@@ -896,15 +896,93 @@
     }
     .first-badge.show { transform: translate(-50%,-50%) scale(1); opacity: 1; }
 
-    /* Responsive */
+    /* ─── MOBILE ─── */
     @media (max-width: 640px) {
-      .g-header { padding: 14px 18px; }
-      .g-body { padding: 30px 16px 48px; gap: 22px; }
-      .def-card { padding: 22px 22px; }
-      .def-text { font-size: 16px; }
-      .blanks-row { gap: 5px; }
-      .blank-char { width: 22px; font-size: 22px; }
-      .res-stats { grid-template-columns: repeat(3, 1fr); }
+
+      /* Main screen */
+      #difficulty-screen { padding: 52px 16px 60px; }
+      .online-counter { font-size: 11px; top: 14px; left: 14px; }
+      .logo { font-size: 34px; }
+      .tagline { font-size: 13px; }
+      .mode-btns { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 32px; width: 100%; max-width: 360px; }
+      .mode-btn { flex-direction: row; padding: 18px 22px; gap: 14px; text-align: left; }
+      .mode-btn-icon { font-size: 26px; flex-shrink: 0; }
+      .mode-btn-sub { display: none; }
+      .difficulty-grid { grid-template-columns: 1fr; }
+
+      /* Game header */
+      .g-header { padding: 10px 14px; gap: 6px; }
+      .g-logo { font-size: 16px; }
+      .stat-val { font-size: 17px; }
+      .stat-lbl { font-size: 8px; }
+      .g-header-right { gap: 12px; }
+      .hrt { font-size: 15px; }
+      .quit-btn { padding: 6px 12px; font-size: 11px; }
+
+      /* Game body — leave room at bottom for fixed input */
+      .g-body { padding: 18px 14px 140px; gap: 16px; }
+      .def-card { padding: 18px 16px; border-radius: 14px; }
+      .def-text { font-size: 15px; line-height: 1.55; }
+      .blanks-row { gap: 5px; min-height: 44px; }
+      .blank-char { width: 18px; font-size: 20px; }
+      .audio-row { gap: 8px; flex-wrap: wrap; justify-content: center; }
+      .speak-btn { padding: 11px 18px; font-size: 13px; border-radius: 12px; }
+      .hint-btn  { padding: 11px 14px; font-size: 13px; border-radius: 12px; }
+
+      /* Input — fixed to bottom so keyboard pushes it up */
+      .input-area {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        padding: 10px 14px 22px;
+        background: #fff;
+        border-top: 1px solid #ebebeb;
+        box-shadow: 0 -4px 24px rgba(0,0,0,.07);
+        z-index: 100;
+      }
+      .spell-input { padding: 14px 16px; font-size: 18px; letter-spacing: 3px; border-radius: 12px; }
+      .submit-btn  { padding: 14px 20px; font-size: 14px; border-radius: 12px; }
+      .answer-hint { font-size: 12px; margin-top: 6px; }
+
+      /* Progress */
+      .progress-wrap { padding: 0 2px; }
+      .prog-lbl { font-size: 10px; }
+
+      /* Lobby */
+      #lobby-screen { padding: 36px 14px 60px; }
+      .lobby-options { grid-template-columns: 1fr; }
+      .lobby-header { margin-bottom: 24px; }
+      .lobby-title { font-size: 20px; }
+      .lobby-panel { padding: 20px 16px; }
+      .public-rooms-section { margin-top: 4px; }
+
+      /* Waiting room */
+      .wait-code-card { padding: 24px 20px; }
+      .wait-code-big  { font-size: 38px; letter-spacing: 6px; }
+
+      /* Multi game header */
+      .mg-header { padding: 10px 14px; flex-wrap: wrap; gap: 6px; }
+      .mg-scoreboard { order: 2; width: 100%; justify-content: center; gap: 12px; }
+      .mg-player-score { font-size: 28px; }
+      .mg-body { padding: 16px 14px 140px; gap: 16px; }
+
+      /* Multi input fixed */
+      #multi-screen .input-area {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        padding: 10px 14px 22px;
+        background: #fff;
+        border-top: 1px solid #ebebeb;
+        box-shadow: 0 -4px 24px rgba(0,0,0,.07);
+        z-index: 100;
+      }
+
+      /* Result */
+      #result-screen { padding: 48px 16px 60px; }
+      .res-title { font-size: 28px; }
+      .res-stats { gap: 10px; }
+      .res-stat-n { font-size: 26px; }
+      .res-actions { flex-direction: column; align-items: stretch; }
+      .btn-play-again, .btn-back { padding: 14px; font-size: 15px; }
     }
   </style>
 </head>
@@ -1019,7 +1097,7 @@
       <div class="input-row">
         <input type="text" class="spell-input" id="spell-input"
                placeholder="Type your answer…"
-               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                onkeydown="handleKey(event)" oninput="handleInput(event)">
         <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">Submit</button>
       </div>
@@ -1184,7 +1262,7 @@
       <div class="input-row">
         <input type="text" class="spell-input" id="mg-input"
                placeholder="Type your answer…"
-               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                onkeydown="if(event.key==='Enter')submitMultiAnswer()"
                oninput="handleMultiInput(event)">
         <button class="submit-btn" id="mg-submit-btn" onclick="submitMultiAnswer()">Submit</button>
@@ -3040,10 +3118,13 @@ backToMenu = function() {
   showScreen('difficulty-screen');
 };
 
-// ── Global key redirect: any printable key during game → focus input ──
+// ── Desktop: any printable key during game → redirect to input ──
+const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 document.addEventListener('keydown', e => {
+  if (isMobile()) return; // 모바일은 직접 탭해서 입력
   if (e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.key.length !== 1) return; // skip Enter, Backspace, Arrow, etc.
+  if (e.key.length !== 1) return;
 
   const activeScreen = document.querySelector('.screen.active');
   if (!activeScreen) return;
@@ -3054,10 +3135,16 @@ document.addEventListener('keydown', e => {
 
   const inp = document.getElementById(inputId);
   if (!inp || inp.disabled) return;
-  if (document.activeElement !== inp) {
-    inp.focus();
-    // Don't preventDefault — let the keydown naturally type into the now-focused input
-  }
+  if (document.activeElement !== inp) inp.focus();
+});
+
+// ── Mobile: 입력창 탭하면 키보드 올라오도록 ──
+document.addEventListener('DOMContentLoaded', () => {
+  ['spell-input', 'mg-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchend', () => { el.focus(); }, { passive: true });
+  });
 });
 
 // Init
