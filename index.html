@@ -997,7 +997,7 @@
 
     <!-- Audio controls -->
     <div class="audio-row">
-      <button class="speak-btn" id="speak-btn" onclick="speakWord(false)">
+      <button class="speak-btn" id="speak-btn" onclick="speakWord(false)" onmousedown="event.preventDefault()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         Hear Word
       </button>
@@ -1174,7 +1174,7 @@
     <div class="opp-status" id="mg-opp-status"></div>
 
     <div class="audio-row">
-      <button class="speak-btn" id="mg-speak-btn" onclick="speakMultiWord(false)">
+      <button class="speak-btn" id="mg-speak-btn" onclick="speakMultiWord(false)" onmousedown="event.preventDefault()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         Hear Word
       </button>
@@ -2391,7 +2391,7 @@ function speakWord(withIntro = true) {
     return u;
   }
 
-  const done  = () => { speaking = false; btn.classList.remove('speaking'); btn.disabled = false; };
+  const done  = () => { speaking = false; btn.classList.remove('speaking'); btn.disabled = false; document.getElementById('spell-input')?.focus(); };
   const u2    = makeUtt(word, 0.78, 1.0);
   const u3    = makeUtt(word, 0.52, 0.98);
   u3.onend    = done;
@@ -2969,7 +2969,7 @@ function speakMultiWord(withIntro = true) {
   window.speechSynthesis?.cancel();
   btn.classList.add('speaking'); btn.disabled = true;
   const v    = selectedVoice;
-  const done = () => { btn.classList.remove('speaking'); btn.disabled = false; };
+  const done = () => { btn.classList.remove('speaking'); btn.disabled = false; document.getElementById('mg-input')?.focus(); };
   function u(t, r) {
     const ut = new SpeechSynthesisUtterance(t);
     ut.rate=r; ut.pitch=1; ut.volume=1; if(v) ut.voice=v; return ut;
