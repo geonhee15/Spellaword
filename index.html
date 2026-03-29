@@ -997,7 +997,7 @@
 
     <!-- Audio controls -->
     <div class="audio-row">
-      <button class="speak-btn" id="speak-btn" onclick="speakWord()">
+      <button class="speak-btn" id="speak-btn" onclick="speakWord(false)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         Hear Word
       </button>
@@ -1174,7 +1174,7 @@
     <div class="opp-status" id="mg-opp-status"></div>
 
     <div class="audio-row">
-      <button class="speak-btn" id="mg-speak-btn" onclick="speakMultiWord()">
+      <button class="speak-btn" id="mg-speak-btn" onclick="speakMultiWord(false)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         Hear Word
       </button>
@@ -2369,7 +2369,7 @@ function toggleVoicePicker(force) {
 //  SPEAK
 // ════════════════════════════════════════════════════════════
 let speaking = false;
-function speakWord() {
+function speakWord(withIntro = true) {
   if (!state.currentWord) return;
   if (!window.speechSynthesis) {
     showToast('Speech not supported in this browser', 't-info');
@@ -2381,7 +2381,7 @@ function speakWord() {
   btn.classList.add('speaking');
   btn.disabled = true;
 
-  const word = state.currentWord.w;
+  const word  = state.currentWord.w;
   const voice = selectedVoice;
 
   function makeUtt(text, rate, pitch) {
@@ -2391,25 +2391,17 @@ function speakWord() {
     return u;
   }
 
-  // Step 1: "Spell the word:"
-  const u1 = makeUtt('Spell the word:', 0.88, 1.0);
-  // Step 2: word at normal pace
-  const u2 = makeUtt(word, 0.78, 1.0);
-  // Step 3: word slowly and clearly
-  const u3 = makeUtt(word, 0.52, 0.98);
+  const done  = () => { speaking = false; btn.classList.remove('speaking'); btn.disabled = false; };
+  const u2    = makeUtt(word, 0.78, 1.0);
+  const u3    = makeUtt(word, 0.52, 0.98);
+  u3.onend    = done;
+  u2.onerror  = u3.onerror = done;
 
-  u3.onend = () => {
-    speaking = false;
-    btn.classList.remove('speaking');
-    btn.disabled = false;
-  };
-  u1.onerror = u2.onerror = u3.onerror = () => {
-    speaking = false;
-    btn.classList.remove('speaking');
-    btn.disabled = false;
-  };
-
-  window.speechSynthesis.speak(u1);
+  if (withIntro) {
+    const u1   = makeUtt('Spell the word:', 0.88, 1.0);
+    u1.onerror = done;
+    window.speechSynthesis.speak(u1);
+  }
   window.speechSynthesis.speak(u2);
   window.speechSynthesis.speak(u3);
 }
@@ -2950,15 +2942,13 @@ async function submitMultiAnswer() {
       // Update my score
       await db.ref('rooms/' + currentCode + '/players/' + myUid + '/score').set(ms.myScore);
 
-      // Host advances the word index
-      if (ms.room.host === myUid) {
-        setTimeout(async () => {
-          await db.ref('rooms/' + currentCode).update({
-            currentWordIdx: ms.wordIdx + 1,
-            roundWinner: null
-          });
-        }, 2000);
-      }
+      // Either player advances via transaction (prevents double-advance)
+      setTimeout(async () => {
+        await db.ref('rooms/' + currentCode + '/currentWordIdx').transaction(cur => {
+          return cur === ms.wordIdx ? ms.wordIdx + 1 : undefined;
+        });
+        await db.ref('rooms/' + currentCode + '/roundWinner').set(null);
+      }, 2000);
     }
     document.getElementById('mg-me-score').textContent = ms.myScore;
     syncLeading();
@@ -2971,21 +2961,23 @@ async function submitMultiAnswer() {
   }
 }
 
-function speakMultiWord() {
+function speakMultiWord(withIntro = true) {
   const word = ms.room?.wordList[ms.wordIdx];
   if (!word) return;
   const btn = document.getElementById('mg-speak-btn');
   if (!btn) return;
   window.speechSynthesis?.cancel();
   btn.classList.add('speaking'); btn.disabled = true;
-  const v = selectedVoice;
+  const v    = selectedVoice;
+  const done = () => { btn.classList.remove('speaking'); btn.disabled = false; };
   function u(t, r) {
     const ut = new SpeechSynthesisUtterance(t);
     ut.rate=r; ut.pitch=1; ut.volume=1; if(v) ut.voice=v; return ut;
   }
-  const u3 = u(word.w, 0.52);
-  u3.onend = () => { btn.classList.remove('speaking'); btn.disabled = false; };
-  window.speechSynthesis?.speak(u('Spell the word:', 0.88));
+  const u3  = u(word.w, 0.52);
+  u3.onend  = done;
+  u3.onerror = done;
+  if (withIntro) window.speechSynthesis?.speak(u('Spell the word:', 0.88));
   window.speechSynthesis?.speak(u(word.w, 0.78));
   window.speechSynthesis?.speak(u3);
 }
