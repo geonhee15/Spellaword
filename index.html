@@ -2704,12 +2704,16 @@ function enterWaiting(code, roomName) {
   document.getElementById('wait-code').textContent      = code;
   showScreen('waiting-screen');
 
-  currentRoomRef.on('value', snap => {
+  function waitingHandler(snap) {
     if (!snap.exists()) { leaveRoom(false); showScreen('lobby-screen'); return; }
     const r = snap.val();
     renderWaitingPlayers(r);
-    if (r.status === 'playing') startMultiScreen(r);
-  });
+    if (r.status === 'playing') {
+      currentRoomRef.off('value', waitingHandler); // 리스너 제거 후 게임 시작
+      startMultiScreen(r);
+    }
+  }
+  currentRoomRef.on('value', waitingHandler);
 }
 
 function renderWaitingPlayers(room) {
